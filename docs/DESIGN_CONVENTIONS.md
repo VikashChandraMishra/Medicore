@@ -35,9 +35,13 @@ const handleSubmit = () => {
 
   * Example: `DESIGN_CONVENTIONS.md`
 
-* Code files → **kebab-case**
+* Regular Code files → **kebab-case**
 
-  * Example: `login-page.tsx`, `auth-service.ts`
+  * Example: `auth-service.ts`
+
+* Component Code files → **TitleCase**
+
+  * Example: `Login.tsx`, `Landing.ts`
 
 ---
 

@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+:root {
+  --font-sans: "Figtree", system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+}

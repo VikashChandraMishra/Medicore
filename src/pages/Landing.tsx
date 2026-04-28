@@ -1,20 +1,6 @@
 export default function Landing() {
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800">
-            {/* Navbar */}
-            <header className="flex items-center justify-between px-8 py-5 max-w-7xl mx-auto">
-                <h2 className="text-xl font-semibold">Medicore</h2>
-
-                <nav className="flex items-center gap-6 text-sm">
-                    <a href="#" className="hover:text-blue-600">Features</a>
-                    <a href="#" className="hover:text-blue-600">Analytics</a>
-                    <a href="#" className="hover:text-blue-600">Patients</a>
-                    <button className="px-4 py-2 rounded-md bg-gray-900 text-white hover:bg-gray-700">
-                        Login
-                    </button>
-                </nav>
-            </header>
-
             {/* Hero */}
             <section className="text-center px-6 mt-16">
                 <h1 className="text-4xl md:text-5xl font-bold mb-6">

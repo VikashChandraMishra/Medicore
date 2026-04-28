@@ -3,7 +3,7 @@ import { toast } from "sonner";
 type ToastOptions = {
     description?: string;
     duration?: number;
-};
+}
 
 export const notify = {
     success: (message: string, options?: ToastOptions) => {

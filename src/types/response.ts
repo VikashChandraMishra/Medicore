@@ -1,6 +1,6 @@
 import { ERROR_CODES } from "../constants/response";
 
-export type AppErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+export type AppErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES]
 
 export type AppError = {
     code: AppErrorCode;

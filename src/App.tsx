@@ -1,12 +1,15 @@
 import { BrowserRouter, Route, Routes } from "react-router";
+import { Toaster } from "sonner";
+import Header from "./components/Header";
 import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/SignUp";
-import Header from "./components/Header";
 
 function App() {
+
   return (
     <>
+      <Toaster position="top-right" richColors />
       <BrowserRouter>
         <Header />
         <Routes>

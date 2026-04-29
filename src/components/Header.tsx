@@ -21,7 +21,7 @@ export default function Header() {
                 <Link to="#" className="hover:text-blue-600">
                     Analytics
                 </Link>
-                <Link to="#" className="hover:text-blue-600">
+                <Link to="/patients" className="hover:text-blue-600">
                     Patients
                 </Link>
 

@@ -14,6 +14,14 @@ export interface Vitals {
     temperature?: number;
 }
 
+export interface Insurance {
+    provider: string;
+    policyNumber: string;
+    groupNumber: string;
+    isActive: boolean;
+    validUntil: Date;
+}
+
 export interface Patient {
     id: string;
 
@@ -28,6 +36,7 @@ export interface Patient {
     address: Address;
 
     bloodGroup?: string;
+    insurance: Insurance;
     allergies: string[];
     chronicConditions: string[];
 

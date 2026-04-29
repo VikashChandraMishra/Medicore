@@ -1,5 +1,7 @@
-import { LayoutGrid, List } from "lucide-react";
+import { Check, LayoutGrid, List, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Input from "../components/ui/Input";
+import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
 import { mockPatients } from "../data/patients";
 import type { Patient } from "../types/patient";
@@ -64,14 +66,8 @@ function getRoomNumber(patient: Patient, index: number) {
 }
 
 function getStatusClass(status: PatientStatus) {
-    if (status === PATIENT_STATUS.ACTIVE) {
-        return "bg-green-50 text-green-700";
-    }
-
-    if (status === PATIENT_STATUS.CRITICAL) {
-        return "bg-red-50 text-red-600";
-    }
-
+    if (status === PATIENT_STATUS.ACTIVE) return "bg-green-50 text-green-700";
+    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-50 text-red-600";
     return "bg-amber-50 text-amber-600";
 }
 
@@ -79,6 +75,7 @@ export default function Patients() {
     const [view, setView] = useState<"list" | "grid">("grid");
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<PatientStatus | "all">("all");
+    const [doctorFilter, setDoctorFilter] = useState("all");
     const [selected, setSelected] = useState<Patient | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -86,6 +83,26 @@ export default function Patients() {
     const closeTimerRef = useRef<number | null>(null);
 
     const debouncedSearch = useDebounce(search);
+
+    const doctorOptions = useMemo(() => {
+        const doctors = mockPatients.map((patient) => getDoctorMeta(patient).name);
+        return Array.from(new Set(doctors)).sort((a, b) => a.localeCompare(b));
+    }, []);
+
+    const statusOptions = [
+        { label: "All Status", value: "all" },
+        { label: "Active", value: PATIENT_STATUS.ACTIVE },
+        { label: "Inactive", value: PATIENT_STATUS.INACTIVE },
+        { label: "Critical", value: PATIENT_STATUS.CRITICAL },
+    ];
+
+    const doctorSelectOptions = [
+        { label: "All Doctors", value: "all" },
+        ...doctorOptions.map((doctor) => ({
+            label: doctor,
+            value: doctor,
+        })),
+    ];
 
     useEffect(() => {
         const t = setTimeout(() => setLoading(false), 800);
@@ -99,6 +116,14 @@ export default function Patients() {
             }
         };
     }, []);
+
+    const closeDetails = () => {
+        setIsDetailsOpen(false);
+        closeTimerRef.current = window.setTimeout(() => {
+            setSelected(null);
+            closeTimerRef.current = null;
+        }, 250);
+    };
 
     const openDetails = (patient: Patient) => {
         if (selected?.id === patient.id && isDetailsOpen) {
@@ -121,42 +146,37 @@ export default function Patients() {
         requestAnimationFrame(() => setIsDetailsOpen(true));
     };
 
-    const closeDetails = () => {
-        setIsDetailsOpen(false);
-        closeTimerRef.current = window.setTimeout(() => {
-            setSelected(null);
-            closeTimerRef.current = null;
-        }, 250);
-    };
-
     const filtered = useMemo(() => {
-        return mockPatients.filter((p) => {
+        return mockPatients.filter((patient) => {
             const query = debouncedSearch.toLowerCase();
             const searchable = [
-                getFullName(p),
-                p.email,
-                p.phone,
-                p.address.city,
-                p.address.state,
-                p.bloodGroup ?? "",
-                p.insurance.provider,
-                p.insurance.policyNumber,
-                ...p.allergies,
-                ...p.chronicConditions,
+                getFullName(patient),
+                patient.email,
+                patient.phone,
+                patient.address.city,
+                patient.address.state,
+                patient.bloodGroup ?? "",
+                patient.insurance.provider,
+                patient.insurance.policyNumber,
+                ...patient.allergies,
+                ...patient.chronicConditions,
             ]
                 .join(" ")
                 .toLowerCase();
 
             const matchesSearch = searchable.includes(query);
-            const matchesStatus = statusFilter === "all" || p.status === statusFilter;
+            const matchesStatus =
+                statusFilter === "all" || patient.status === statusFilter;
+            const matchesDoctor =
+                doctorFilter === "all" || getDoctorMeta(patient).name === doctorFilter;
 
-            return matchesSearch && matchesStatus;
+            return matchesSearch && matchesStatus && matchesDoctor;
         });
-    }, [debouncedSearch, statusFilter]);
+    }, [debouncedSearch, doctorFilter, statusFilter]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, view]);
+    }, [debouncedSearch, doctorFilter, statusFilter, view]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / LIST_PAGE_SIZE));
     const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -180,25 +200,31 @@ export default function Patients() {
                     <div className="flex flex-wrap gap-3 items-center">
                         {view === "grid" && (
                             <>
-                                <input
+                                <Input
                                     placeholder="Search patients..."
-                                    className="px-4 py-2 border rounded-md"
+                                    className="w-56"
+                                    leftIcon={<Search className="h-4 w-4" />}
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
 
-                                <select
-                                    className="px-3 py-2 border rounded-md"
+                                <Select
+                                    className="w-36"
                                     value={statusFilter}
-                                    onChange={(e) =>
-                                        setStatusFilter(e.target.value as PatientStatus | "all")
+                                    options={statusOptions}
+                                    onValueChange={(value) =>
+                                        setStatusFilter(value as PatientStatus | "all")
                                     }
-                                >
-                                    <option value="all">All</option>
-                                    <option value={PATIENT_STATUS.ACTIVE}>Active</option>
-                                    <option value={PATIENT_STATUS.INACTIVE}>Inactive</option>
-                                    <option value={PATIENT_STATUS.CRITICAL}>Critical</option>
-                                </select>
+                                    ariaLabel="Filter by status"
+                                />
+
+                                <Select
+                                    className="w-48"
+                                    value={doctorFilter}
+                                    options={doctorSelectOptions}
+                                    onValueChange={setDoctorFilter}
+                                    ariaLabel="Filter by doctor"
+                                />
                             </>
                         )}
 
@@ -229,37 +255,37 @@ export default function Patients() {
                             <div key={i} className="h-40 bg-gray-200 animate-pulse rounded-xl" />
                         ))}
                     </div>
-                ) : filtered.length === 0 ? (
+                ) : filtered.length === 0 && view === "grid" ? (
                     <div className="text-center py-20 text-gray-500">
                         No patients found.
                     </div>
                 ) : view === "grid" ? (
                     <div className="grid md:grid-cols-3 gap-6">
-                        {filtered.map((p) => (
+                        {filtered.map((patient) => (
                             <div
-                                key={p.id}
-                                onClick={() => openDetails(p)}
+                                key={patient.id}
+                                onClick={() => openDetails(patient)}
                                 className="cursor-pointer p-4 rounded-xl bg-white shadow hover:shadow-md"
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <h2 className="font-semibold">{getFullName(p)}</h2>
+                                        <h2 className="font-semibold">{getFullName(patient)}</h2>
                                         <p className="text-sm text-gray-500">
-                                            {getPrimaryCondition(p)}
+                                            {getPrimaryCondition(patient)}
                                         </p>
                                     </div>
                                     <span className="text-xs rounded-full bg-gray-100 px-2 py-1">
-                                        {formatLabel(p.status)}
+                                        {formatLabel(patient.status)}
                                     </span>
                                 </div>
 
                                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                                    <p>Age: {p.age}</p>
-                                    <p>Visits: {p.visits.length}</p>
-                                    <p>Notes: {p.notes.length}</p>
-                                    <p>{p.address.city}</p>
+                                    <p>Age: {patient.age}</p>
+                                    <p>Visits: {patient.visits.length}</p>
+                                    <p>Notes: {patient.notes.length}</p>
+                                    <p>{patient.address.city}</p>
                                     <p className="col-span-2 text-gray-600">
-                                        Last visit: {formatDate(p.lastVisitAt)}
+                                        Last visit: {formatDate(patient.lastVisitAt)}
                                     </p>
                                 </div>
                             </div>
@@ -278,8 +304,8 @@ export default function Patients() {
                             </button>
                         </div>
 
-                        <div className="flex flex-col gap-4 px-5 pb-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex w-full gap-1 overflow-x-auto rounded-full bg-gray-100 p-1 text-sm lg:w-auto">
+                        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-4">
+                            <div className="flex max-w-full shrink-0 gap-1 overflow-x-auto rounded-full bg-gray-100 p-1 text-sm">
                                 <button
                                     onClick={() => setStatusFilter("all")}
                                     className={`whitespace-nowrap rounded-full px-4 py-2 ${statusFilter === "all" ? "bg-white shadow-sm" : "text-gray-600"}`}
@@ -303,20 +329,34 @@ export default function Patients() {
                                 </button>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <div className="flex h-10 items-center gap-2 rounded-full bg-gray-100 px-4">
-                                    <span className="text-gray-500">Search</span>
-                                    <input
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        placeholder="Search..."
-                                        className="w-36 bg-transparent text-sm outline-none placeholder:text-gray-500"
-                                    />
-                                </div>
-                                <button className="h-10 rounded-full bg-gray-100 px-4 text-sm text-gray-700 hover:bg-gray-200">
-                                    Filter
-                                </button>
-                                <button className="h-10 rounded-full bg-gray-100 px-4 text-sm text-gray-700 hover:bg-gray-200">
+                            <div className="ml-auto flex flex-wrap items-center gap-2">
+                                <Select
+                                    className="w-48"
+                                    value={doctorFilter}
+                                    options={doctorSelectOptions}
+                                    onValueChange={setDoctorFilter}
+                                    ariaLabel="Filter by doctor"
+                                />
+
+                                <Select
+                                    className="w-40"
+                                    value={statusFilter}
+                                    options={statusOptions}
+                                    onValueChange={(value) =>
+                                        setStatusFilter(value as PatientStatus | "all")
+                                    }
+                                    ariaLabel="Filter by status"
+                                />
+
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search..."
+                                    leftIcon={<Search className="h-4 w-4" />}
+                                    className="w-64"
+                                />
+
+                                <button className="h-12 rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 shadow-sm hover:bg-gray-50">
                                     Sort By
                                 </button>
                             </div>
@@ -324,7 +364,7 @@ export default function Patients() {
 
                         <div className="max-h-180 overflow-auto">
                             <table className="w-full min-w-245 border-collapse text-left text-sm">
-                                <thead className="sticky top-0 z-10 bg-white">
+                                <thead className="sticky top-0 z-0 bg-white">
                                     <tr className="border-y border-gray-100 text-xs font-medium text-gray-500">
                                         <th className="w-12 px-5 py-3">
                                             <input type="checkbox" className="h-4 w-4 rounded border-gray-300" />
@@ -340,96 +380,108 @@ export default function Patients() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedPatients.map((p, index) => {
-                                        const doctor = getDoctorMeta(p);
-                                        const insured = p.insurance.isActive;
-                                        const patientIndex = pageStartIndex + index;
-
-                                        return (
-                                            <tr
-                                                key={p.id}
-                                                onClick={() => openDetails(p)}
-                                                className="cursor-pointer border-b border-gray-100 hover:bg-gray-50/80"
+                                    {paginatedPatients.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan={9}
+                                                className="px-5 py-12 text-center text-sm text-gray-500"
                                             >
-                                                <td className="px-5 py-3">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="h-4 w-4 rounded border-gray-300"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </td>
-                                                <td className="whitespace-nowrap px-3 py-3 text-gray-900">
-                                                    {formatDate(p.lastVisitAt)}
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-700">
-                                                            {getInitials(p)}
+                                                No patients match the criteria
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        paginatedPatients.map((patient, index) => {
+                                            const doctor = getDoctorMeta(patient);
+                                            const insured = patient.insurance.isActive;
+                                            const patientIndex = pageStartIndex + index;
+
+                                            return (
+                                                <tr
+                                                    key={patient.id}
+                                                    onClick={() => openDetails(patient)}
+                                                    className="cursor-pointer border-b border-gray-100 hover:bg-gray-50/80"
+                                                >
+                                                    <td className="px-5 py-3">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="h-4 w-4 rounded border-gray-300"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </td>
+                                                    <td className="whitespace-nowrap px-3 py-3 text-gray-900">
+                                                        {formatDate(patient.lastVisitAt)}
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-700">
+                                                                {getInitials(patient)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-medium text-gray-950">
+                                                                    {getFullName(patient)}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {patient.age} Years - {formatLabel(patient.gender)}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="font-medium text-gray-950">
-                                                                {getFullName(p)}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {p.age} Years - {formatLabel(p.gender)}
-                                                            </p>
+                                                    </td>
+                                                    <td className="max-w-42.5 truncate px-3 py-3 text-gray-900">
+                                                        {getPrimaryCondition(patient)}
+                                                    </td>
+                                                    <td className="whitespace-nowrap px-3 py-3 font-medium text-gray-900">
+                                                        {getRoomNumber(patient, patientIndex)}
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-stone-100 text-xs font-semibold text-stone-700">
+                                                                {doctor.name
+                                                                    .split(" ")
+                                                                    .slice(-2)
+                                                                    .map((part) => part.charAt(0))
+                                                                    .join("")}
+                                                            </div>
+                                                            <div>
+                                                                <p className="max-w-37.5 truncate font-medium text-gray-950">
+                                                                    {doctor.name}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {doctor.specialty}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="max-w-42.5 truncate px-3 py-3 text-gray-900">
-                                                    {getPrimaryCondition(p)}
-                                                </td>
-                                                <td className="whitespace-nowrap px-3 py-3 font-medium text-gray-900">
-                                                    {getRoomNumber(p, patientIndex)}
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-stone-100 text-xs font-semibold text-stone-700">
-                                                            {doctor.name
-                                                                .split(" ")
-                                                                .slice(-2)
-                                                                .map((part) => part.charAt(0))
-                                                                .join("")}
-                                                        </div>
-                                                        <div>
-                                                            <p className="max-w-37.5 truncate font-medium text-gray-950">
-                                                                {doctor.name}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {doctor.specialty}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-3 text-center">
-                                                    <span
-                                                        className={`inline-grid h-5 w-5 place-items-center rounded-full text-xs font-bold ${insured
-                                                            ? "bg-green-500 text-white"
-                                                            : "bg-gray-200 text-gray-400"
-                                                            }`}
-                                                    >
-                                                        {insured ? "✓" : "-"}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <span
-                                                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClass(p.status)}`}
-                                                    >
-                                                        {formatLabel(p.status)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-5 py-3 text-right text-xl leading-none text-gray-400">
-                                                    ...
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                    </td>
+                                                    <td className="px-3 py-3 text-center">
+                                                        <span
+                                                            className={`inline-grid h-5 w-5 place-items-center rounded-full text-xs font-bold ${insured
+                                                                ? "bg-green-500 text-white"
+                                                                : "bg-gray-200 text-gray-400"
+                                                                }`}
+                                                        >
+                                                            {insured ? <Check className="h-3 w-3" /> : "-"}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        <span
+                                                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClass(patient.status)}`}
+                                                        >
+                                                            {formatLabel(patient.status)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-5 py-3 text-right text-xl leading-none text-gray-400">
+                                                        ...
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+
                         <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
                             <p>
-                                Showing {pageStartIndex + 1}-
+                                Showing {filtered.length === 0 ? 0 : pageStartIndex + 1}-
                                 {Math.min(pageStartIndex + paginatedPatients.length, filtered.length)} of{" "}
                                 {filtered.length} patients
                             </p>
@@ -463,7 +515,7 @@ export default function Patients() {
 
                 {selected && (
                     <div
-                        className={`fixed right-0 top-18.25 bottom-0 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
+                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
                             ? "translate-x-0 opacity-100"
                             : "translate-x-full opacity-0"
                             }`}

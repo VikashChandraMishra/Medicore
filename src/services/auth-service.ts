@@ -13,7 +13,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { COLLECTIONS } from "../constants/collections";
-import { DEPARTMENTS, USER_ROLES, USER_STATUS } from "../constants/user";
+import { USER_ROLES, USER_STATUS } from "../constants/user";
 import { auth, db } from "../config/firebase-config";
 
 const googleProvider = new GoogleAuthProvider();
@@ -62,10 +62,8 @@ const createUserDocument = async (user: FirebaseUser) => {
         uid: user.uid,
         displayName: getFallbackDisplayName(user),
         email: user.email ?? "",
-        phone: user.phoneNumber ?? "",
         role: USER_ROLES.STAFF,
         status: USER_STATUS.ACTIVE,
-        department: DEPARTMENTS.FRONT_DESK,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),

@@ -50,7 +50,7 @@ const handleSubmit = () => {
 * Variables → **camelCase**
 * Functions → **camelCase**
 * Constant object keys → **UPPER_SNAKE_CASE**
-* Constant values should use app/domain format. Role and status values use uppercase strings, but department values may be human-readable display values such as `"General Medicine"` and do not need to follow the uppercase rule.
+* Constant values should use app/domain format. Role and status values use uppercase strings.
 
 ```ts
 const userEmail = "";

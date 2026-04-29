@@ -23,14 +23,16 @@ export default function AppLayout() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-50 text-gray-800">
+        <div className="h-screen overflow-hidden bg-gray-50 text-gray-800 flex flex-col">
             <Header />
 
-            <div className="flex">
+            <div className="flex flex-1 min-h-0 overflow-hidden">
                 <Sidebar isOpen={isSidebarOpen} onClose={toggleSidebar} />
 
-                <main className="flex-1 transition-all duration-300 p-6 max-w-7xl mx-auto w-full">
-                    <Outlet />
+                <main className="flex-1 min-w-0 overflow-y-auto transition-all duration-300">
+                    <div className="p-6 max-w-7xl mx-auto w-full">
+                        <Outlet />
+                    </div>
                 </main>
             </div>
         </div>

@@ -26,6 +26,13 @@ body {
   background-color: #f9fafb;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 h1 {
   font-size: var(--text-4xl);
   font-weight: 700;

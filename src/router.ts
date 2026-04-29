@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import AppLayout from "./AppLayout";
+import Analytics from "./pages/Analytics";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Landing from "./pages/Landing";
@@ -30,6 +31,10 @@ export const router = createBrowserRouter([
             {
                 path: "patients",
                 Component: Patients,
+            },
+            {
+                path: "analytics",
+                Component: Analytics,
             },
         ],
     },

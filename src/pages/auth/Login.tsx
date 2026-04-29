@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import Input from "../../components/ui/Input";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -29,18 +30,18 @@ export default function Login() {
                 </h2>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <input
+                    <Input
                         type="email"
                         placeholder="Email"
-                        className="px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="h-12"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
 
-                    <input
+                    <Input
                         type="password"
                         placeholder="Password"
-                        className="px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="h-12"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />

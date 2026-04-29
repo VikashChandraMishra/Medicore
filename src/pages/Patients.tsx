@@ -1,5 +1,6 @@
 import { Check, LayoutGrid, List, MoreVertical, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
@@ -77,6 +78,7 @@ function truncateText(value: string, maxLength = 96) {
 }
 
 export default function Patients() {
+    const [searchParams] = useSearchParams();
     const [view, setView] = useState<"list" | "grid">("grid");
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<PatientStatus | "all">("all");
@@ -123,6 +125,23 @@ export default function Patients() {
             }
         };
     }, []);
+
+    useEffect(() => {
+        const patientId = searchParams.get("patientId");
+        if (!patientId) return;
+
+        const patient = mockPatients.find((item) => item.id === patientId);
+        if (!patient) return;
+
+        if (closeTimerRef.current) {
+            window.clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+
+        setSelected(patient);
+        setSelectedVisit(null);
+        requestAnimationFrame(() => setIsDetailsOpen(true));
+    }, [searchParams]);
 
     const closeDetails = () => {
         setSelectedVisit(null);

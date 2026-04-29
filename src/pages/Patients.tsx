@@ -1,10 +1,10 @@
-import { Check, LayoutGrid, List, MoreVertical, Plus, Search } from "lucide-react";
+import { Check, LayoutGrid, List, MoreVertical, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
 import { mockPatients } from "../data/patients";
-import type { Patient } from "../types/patient";
+import type { Patient, Visit } from "../types/patient";
 
 const LIST_PAGE_SIZE = 10;
 
@@ -71,13 +71,20 @@ function getStatusClass(status: PatientStatus) {
     return "bg-amber-50 text-amber-600";
 }
 
+function truncateText(value: string, maxLength = 96) {
+    if (value.length <= maxLength) return value;
+    return `${value.slice(0, maxLength).trim()}...`;
+}
+
 export default function Patients() {
     const [view, setView] = useState<"list" | "grid">("grid");
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<PatientStatus | "all">("all");
     const [doctorFilter, setDoctorFilter] = useState("all");
     const [selected, setSelected] = useState<Patient | null>(null);
+    const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [visitView, setVisitView] = useState<"timeline" | "cards">("timeline");
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const closeTimerRef = useRef<number | null>(null);
@@ -118,6 +125,7 @@ export default function Patients() {
     }, []);
 
     const closeDetails = () => {
+        setSelectedVisit(null);
         setIsDetailsOpen(false);
         closeTimerRef.current = window.setTimeout(() => {
             setSelected(null);
@@ -557,38 +565,87 @@ export default function Patients() {
                         </div>
 
                         <div className="mt-6">
-                            <h3 className="font-medium mb-2">Visits</h3>
-                            <div className="space-y-3">
-                                {selected.visits.map((visit) => (
-                                    <div key={visit.id} className="text-sm bg-gray-50 p-3 rounded">
-                                        <div className="flex justify-between gap-3">
-                                            <p className="font-medium">{visit.type}</p>
-                                            <p className="text-gray-500">{formatDate(visit.date)}</p>
-                                        </div>
-                                        <p className="text-gray-600">{visit.doctorName}</p>
-                                        <p className="mt-2">{visit.summary}</p>
-                                        {visit.diagnosis && (
-                                            <p className="mt-2">
-                                                <span className="font-medium">Diagnosis:</span>{" "}
-                                                {visit.diagnosis}
-                                            </p>
-                                        )}
-                                        {visit.prescription && (
-                                            <p className="mt-2">
-                                                <span className="font-medium">Prescription:</span>{" "}
-                                                {visit.prescription}
-                                            </p>
-                                        )}
-                                        {visit.vitals && (
-                                            <p className="mt-2 text-gray-600">
-                                                BP {visit.vitals.bloodPressure ?? "N/A"} - HR{" "}
-                                                {visit.vitals.heartRate ?? "N/A"} - Temp{" "}
-                                                {visit.vitals.temperature ?? "N/A"} F
-                                            </p>
-                                        )}
-                                    </div>
-                                ))}
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <h3 className="font-medium">Visits</h3>
+                                <div className="flex overflow-hidden rounded-md border border-gray-200">
+                                    <button
+                                        onClick={() => setVisitView("timeline")}
+                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "timeline" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"}`}
+                                    >
+                                        Timeline
+                                    </button>
+                                    <button
+                                        onClick={() => setVisitView("cards")}
+                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "cards" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"}`}
+                                    >
+                                        Detail
+                                    </button>
+                                </div>
                             </div>
+
+                            {visitView === "timeline" ? (
+                                <div className="relative space-y-4 pl-5 before:absolute before:left-1.5 before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-gray-200">
+                                    {selected.visits.map((visit) => (
+                                        <button
+                                            key={visit.id}
+                                            onClick={() => setSelectedVisit(visit)}
+                                            className="relative w-full cursor-pointer rounded-xl bg-gray-50 p-3 text-left text-sm transition hover:bg-gray-100 active:scale-[0.99]"
+                                        >
+                                            <span className="absolute -left-5 top-4 h-3 w-3 rounded-full border-2 border-white bg-[#0b1f4d] shadow" />
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <p className="font-medium text-gray-800">{visit.type}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {visit.doctorName}
+                                                    </p>
+                                                </div>
+                                                <p className="shrink-0 text-xs text-gray-500">
+                                                    {formatDate(visit.date)}
+                                                </p>
+                                            </div>
+                                            <p className="mt-2 text-gray-600">
+                                                {truncateText(visit.summary)}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {selected.visits.map((visit) => (
+                                        <button
+                                            key={visit.id}
+                                            onClick={() => setSelectedVisit(visit)}
+                                            className="w-full cursor-pointer rounded-xl bg-gray-50 p-3 text-left text-sm transition hover:bg-gray-100 active:scale-[0.99]"
+                                        >
+                                            <div className="flex justify-between gap-3">
+                                                <p className="font-medium">{visit.type}</p>
+                                                <p className="text-gray-500">{formatDate(visit.date)}</p>
+                                            </div>
+                                            <p className="text-gray-600">{visit.doctorName}</p>
+                                            <p className="mt-2">{visit.summary}</p>
+                                            {visit.diagnosis && (
+                                                <p className="mt-2">
+                                                    <span className="font-medium">Diagnosis:</span>{" "}
+                                                    {visit.diagnosis}
+                                                </p>
+                                            )}
+                                            {visit.prescription && (
+                                                <p className="mt-2">
+                                                    <span className="font-medium">Prescription:</span>{" "}
+                                                    {visit.prescription}
+                                                </p>
+                                            )}
+                                            {visit.vitals && (
+                                                <p className="mt-2 text-gray-600">
+                                                    BP {visit.vitals.bloodPressure ?? "N/A"} - HR{" "}
+                                                    {visit.vitals.heartRate ?? "N/A"} - Temp{" "}
+                                                    {visit.vitals.temperature ?? "N/A"} F
+                                                </p>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="mt-6">
@@ -613,6 +670,101 @@ export default function Patients() {
                                     ))}
                                 </ul>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {selectedVisit && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-950/35 px-4"
+                        onClick={() => setSelectedVisit(null)}
+                    >
+                        <div
+                            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="mb-5 flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-sm text-gray-500">
+                                        {formatDate(selectedVisit.date)}
+                                    </p>
+                                    <h3 className="text-xl font-semibold text-gray-800">
+                                        {selectedVisit.type}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        {selectedVisit.doctorName}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedVisit(null)}
+                                    className="grid h-9 w-9 cursor-pointer place-items-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 active:scale-[0.95]"
+                                    aria-label="Close visit details"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4 text-sm">
+                                <div>
+                                    <p className="font-medium text-gray-800">Summary</p>
+                                    <p className="mt-1 text-gray-600">{selectedVisit.summary}</p>
+                                </div>
+
+                                <div>
+                                    <p className="font-medium text-gray-800">Symptoms</p>
+                                    <p className="mt-1 text-gray-600">
+                                        {selectedVisit.symptoms.join(", ")}
+                                    </p>
+                                </div>
+
+                                {selectedVisit.diagnosis && (
+                                    <div>
+                                        <p className="font-medium text-gray-800">Diagnosis</p>
+                                        <p className="mt-1 text-gray-600">
+                                            {selectedVisit.diagnosis}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {selectedVisit.prescription && (
+                                    <div>
+                                        <p className="font-medium text-gray-800">Prescription</p>
+                                        <p className="mt-1 text-gray-600">
+                                            {selectedVisit.prescription}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {selectedVisit.vitals && (
+                                    <div>
+                                        <p className="font-medium text-gray-800">Vitals</p>
+                                        <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                                            <div className="rounded-xl bg-gray-50 p-3">
+                                                <p className="text-xs text-gray-500">Blood Pressure</p>
+                                                <p className="font-medium text-gray-800">
+                                                    {selectedVisit.vitals.bloodPressure ?? "N/A"}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-xl bg-gray-50 p-3">
+                                                <p className="text-xs text-gray-500">Heart Rate</p>
+                                                <p className="font-medium text-gray-800">
+                                                    {selectedVisit.vitals.heartRate ?? "N/A"}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-xl bg-gray-50 p-3">
+                                                <p className="text-xs text-gray-500">Temperature</p>
+                                                <p className="font-medium text-gray-800">
+                                                    {selectedVisit.vitals.temperature ?? "N/A"} F
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <p className="text-xs text-gray-500">
+                                    Created {formatDate(selectedVisit.createdAt)}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}

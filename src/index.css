@@ -33,6 +33,15 @@ body,
   overflow: hidden;
 }
 
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
 h1 {
   font-size: var(--text-4xl);
   font-weight: 700;

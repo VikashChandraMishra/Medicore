@@ -16,27 +16,27 @@ export default function Header() {
 
                 {/* Right: Navigation */}
                 <nav className="flex items-center gap-6 text-sm">
-                    <Link to="#" className="hover:text-blue-600">
+                    <Link to="#" className="cursor-pointer text-gray-700 transition-colors hover:text-[#0b1f4d] active:translate-y-px">
                         Features
                     </Link>
-                    <Link to="#" className="hover:text-blue-600">
+                    <Link to="#" className="cursor-pointer text-gray-700 transition-colors hover:text-[#0b1f4d] active:translate-y-px">
                         Analytics
                     </Link>
-                    <Link to="/patients" className="hover:text-blue-600">
+                    <Link to="/patients" className="cursor-pointer text-gray-700 transition-colors hover:text-[#0b1f4d] active:translate-y-px">
                         Patients
                     </Link>
 
                     <div className="flex items-center gap-3">
                         <Link
                             to="/auth/login"
-                            className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                            className="cursor-pointer rounded-md bg-gray-200 px-4 py-2 text-gray-800 transition hover:bg-gray-300 active:scale-[0.98]"
                         >
                             Login
                         </Link>
 
                         <Link
                             to="/auth/signup"
-                            className="px-4 py-2 rounded-md bg-gray-900 text-white hover:bg-gray-700"
+                            className="cursor-pointer rounded-md bg-[#0b1f4d] px-4 py-2 text-white transition hover:bg-[#102a63] active:scale-[0.98]"
                         >
                             Sign Up
                         </Link>

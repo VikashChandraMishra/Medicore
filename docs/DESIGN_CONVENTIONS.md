@@ -71,11 +71,34 @@ export default function ComponentName() {
 
 ---
 
+## 5. UI Interaction And Visual Style
+
+* Anything clickable must use a pointer cursor on hover.
+  * Example: `cursor-pointer`
+
+* Clickable elements must show a visual pressing effect when clicked.
+  * Prefer subtle active states such as `active:scale-[0.98]`, `active:translate-y-px`, or an equivalent pressed state that fits the component.
+
+* The primary accent color is navy blue.
+
+* Major text should use dark gray.
+
+* Minor/supporting text should use light gray.
+
+* Icons must come from `lucide-react` only.
+  * Do not add inline SVG icons or icons from other libraries unless explicitly approved.
+
+---
+
 ## Summary
 
 * Use semicolons everywhere
 * Use `const` for functions inside components
 * Follow strict naming conventions
 * Use `export default function` for all components
+* Use pointer cursors and pressed states for clickable UI
+* Use navy blue as the accent color
+* Use dark gray for major text and light gray for minor text
+* Use `lucide-react` for icons
 
 ```

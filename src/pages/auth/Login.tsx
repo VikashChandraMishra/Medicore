@@ -48,15 +48,15 @@ export default function Login() {
 
                     <button
                         type="submit"
-                        className="mt-2 px-4 py-3 bg-gray-900 text-white rounded-md hover:bg-gray-700"
+                        className="mt-2 cursor-pointer rounded-md bg-[#0b1f4d] px-4 py-3 text-white transition hover:bg-[#102a63] active:scale-[0.98]"
                     >
                         Login
                     </button>
                 </form>
 
                 <p className="text-sm text-gray-500 text-center mt-6">
-                    Don’t have an account?{" "}
-                    <Link to="/auth/signup" className="text-blue-600 hover:underline">
+                    Don't have an account?{" "}
+                    <Link to="/auth/signup" className="cursor-pointer text-[#0b1f4d] hover:underline active:translate-y-px">
                         Sign Up
                     </Link>
                 </p>

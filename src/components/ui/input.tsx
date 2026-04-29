@@ -18,8 +18,8 @@ export default function Input({ className, leftIcon, ...props }: InputProps) {
             )}
             <input
                 className={cn(
-                    "flex h-12 w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-500",
-                    "focus-visible:border-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950/10",
+                    "flex h-12 w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 shadow-sm transition-colors placeholder:text-gray-500",
+                    "focus-visible:border-[#0b1f4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f4d]/10",
                     "disabled:cursor-not-allowed disabled:opacity-50",
                     Boolean(leftIcon) && "pl-11",
                     className,

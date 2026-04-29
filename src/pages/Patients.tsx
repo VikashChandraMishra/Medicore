@@ -1,4 +1,4 @@
-import { Check, LayoutGrid, List, Search } from "lucide-react";
+import { Check, LayoutGrid, List, MoreVertical, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -232,7 +232,7 @@ export default function Patients() {
                             <button
                                 aria-label="Grid view"
                                 title="Grid view"
-                                className={`grid h-10 w-12 place-items-center ${view === "grid" ? "bg-black text-white" : ""}`}
+                                className={`grid h-10 w-12 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "grid" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
                                 onClick={() => setView("grid")}
                             >
                                 <LayoutGrid className="h-5 w-5" />
@@ -240,7 +240,7 @@ export default function Patients() {
                             <button
                                 aria-label="List view"
                                 title="List view"
-                                className={`grid h-10 w-12 place-items-center ${view === "list" ? "bg-black text-white" : ""}`}
+                                className={`grid h-10 w-12 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "list" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
                                 onClick={() => setView("list")}
                             >
                                 <List className="h-5 w-5" />
@@ -265,7 +265,7 @@ export default function Patients() {
                             <div
                                 key={patient.id}
                                 onClick={() => openDetails(patient)}
-                                className="cursor-pointer p-4 rounded-xl bg-white shadow hover:shadow-md"
+                                className="cursor-pointer rounded-xl bg-white p-4 shadow transition hover:shadow-md active:scale-[0.99]"
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
@@ -298,8 +298,8 @@ export default function Patients() {
                                 Inpatient Patients List
                             </h2>
 
-                            <button className="inline-flex items-center gap-2 self-start rounded-full bg-gray-950 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 lg:self-auto">
-                                <span className="text-lg leading-none">+</span>
+                            <button className="inline-flex cursor-pointer items-center gap-2 self-start rounded-full bg-[#0b1f4d] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#102a63] active:scale-[0.98] lg:self-auto">
+                                <Plus className="h-4 w-4" />
                                 Add New Patient
                             </button>
                         </div>
@@ -308,23 +308,23 @@ export default function Patients() {
                             <div className="flex max-w-full shrink-0 gap-1 overflow-x-auto rounded-full bg-gray-100 p-1 text-sm">
                                 <button
                                     onClick={() => setStatusFilter("all")}
-                                    className={`whitespace-nowrap rounded-full px-4 py-2 ${statusFilter === "all" ? "bg-white shadow-sm" : "text-gray-600"}`}
+                                    className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-2 transition active:scale-[0.98] ${statusFilter === "all" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
                                 >
                                     Active
                                 </button>
                                 <button
                                     onClick={() => setStatusFilter(PATIENT_STATUS.INACTIVE)}
-                                    className={`whitespace-nowrap rounded-full px-4 py-2 ${statusFilter === PATIENT_STATUS.INACTIVE ? "bg-white shadow-sm" : "text-gray-600"}`}
+                                    className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-2 transition active:scale-[0.98] ${statusFilter === PATIENT_STATUS.INACTIVE ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
                                 >
                                     Discharged
                                 </button>
                                 <button
                                     onClick={() => setStatusFilter(PATIENT_STATUS.CRITICAL)}
-                                    className={`whitespace-nowrap rounded-full px-4 py-2 ${statusFilter === PATIENT_STATUS.CRITICAL ? "bg-white shadow-sm" : "text-gray-600"}`}
+                                    className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-2 transition active:scale-[0.98] ${statusFilter === PATIENT_STATUS.CRITICAL ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
                                 >
                                     Emergency Cases
                                 </button>
-                                <button className="whitespace-nowrap rounded-full px-4 py-2 text-gray-600">
+                                <button className="cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-gray-500 transition hover:text-gray-800 active:scale-[0.98]">
                                     Follow Up
                                 </button>
                             </div>
@@ -356,7 +356,7 @@ export default function Patients() {
                                     className="w-64"
                                 />
 
-                                <button className="h-12 rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 shadow-sm hover:bg-gray-50">
+                                <button className="h-12 cursor-pointer rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.98]">
                                     Sort By
                                 </button>
                             </div>
@@ -367,7 +367,7 @@ export default function Patients() {
                                 <thead className="sticky top-0 z-0 bg-white">
                                     <tr className="border-y border-gray-100 text-xs font-medium text-gray-500">
                                         <th className="w-12 px-5 py-3">
-                                            <input type="checkbox" className="h-4 w-4 rounded border-gray-300" />
+                                            <input type="checkbox" className="h-4 w-4 cursor-pointer rounded border-gray-300" />
                                         </th>
                                         <th className="px-3 py-3">Admission Date</th>
                                         <th className="px-3 py-3">Patient</th>
@@ -399,12 +399,12 @@ export default function Patients() {
                                                 <tr
                                                     key={patient.id}
                                                     onClick={() => openDetails(patient)}
-                                                    className="cursor-pointer border-b border-gray-100 hover:bg-gray-50/80"
+                                                className="cursor-pointer border-b border-gray-100 transition hover:bg-gray-50/80 active:bg-gray-100"
                                                 >
                                                     <td className="px-5 py-3">
                                                         <input
                                                             type="checkbox"
-                                                            className="h-4 w-4 rounded border-gray-300"
+                                                            className="h-4 w-4 cursor-pointer rounded border-gray-300"
                                                             onClick={(e) => e.stopPropagation()}
                                                         />
                                                     </td>
@@ -469,7 +469,7 @@ export default function Patients() {
                                                         </span>
                                                     </td>
                                                     <td className="px-5 py-3 text-right text-xl leading-none text-gray-400">
-                                                        ...
+                                                        <MoreVertical className="ml-auto h-4 w-4" />
                                                     </td>
                                                 </tr>
                                             );
@@ -492,7 +492,7 @@ export default function Patients() {
                                         setCurrentPage((page) => Math.max(1, page - 1))
                                     }
                                     disabled={safeCurrentPage === 1}
-                                    className="rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                     Previous
                                 </button>
@@ -504,7 +504,7 @@ export default function Patients() {
                                         setCurrentPage((page) => Math.min(totalPages, page + 1))
                                     }
                                     disabled={safeCurrentPage === totalPages}
-                                    className="rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                     Next
                                 </button>
@@ -515,14 +515,14 @@ export default function Patients() {
 
                 {selected && (
                     <div
-                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
+                        className={`fixed right-0 top-[73px] bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
                             ? "translate-x-0 opacity-100"
                             : "translate-x-full opacity-0"
                             }`}
                     >
                         <button
                             onClick={closeDetails}
-                            className="mb-4 text-sm text-gray-500"
+                            className="mb-4 cursor-pointer text-sm text-gray-500 transition hover:text-gray-800 active:scale-[0.98]"
                         >
                             Close
                         </button>

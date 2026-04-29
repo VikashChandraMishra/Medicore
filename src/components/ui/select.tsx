@@ -49,7 +49,7 @@ export default function Select({
                 aria-label={ariaLabel}
                 aria-expanded={isOpen}
                 onClick={() => setIsOpen((open) => !open)}
-                className="flex h-12 w-full items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-left text-sm shadow-sm transition-colors hover:bg-gray-50 focus-visible:border-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950/10"
+                className="flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-left text-sm text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-[0.99] focus-visible:border-[#0b1f4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f4d]/10"
             >
                 <span className="truncate">{selected?.label}</span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
@@ -74,8 +74,8 @@ export default function Select({
                                     setIsOpen(false);
                                 }}
                                 className={cn(
-                                    "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-gray-100",
-                                    isSelected ? "text-gray-950" : "text-gray-600",
+                                    "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-gray-100 active:scale-[0.99]",
+                                    isSelected ? "text-gray-800" : "text-gray-500",
                                 )}
                             >
                                 <span className="grid h-4 w-4 place-items-center">

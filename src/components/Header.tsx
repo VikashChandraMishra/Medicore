@@ -4,19 +4,11 @@ import { Link, useNavigate } from "react-router";
 import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
 import { authService } from "../services/auth-service";
+import { getInitialsFromName } from "../utils/initials";
 import { notify } from "../utils/toast";
 
 function getDisplayName(email?: string | null, displayName?: string | null) {
     return displayName || email?.split("@")[0] || "User";
-}
-
-function getInitials(name: string) {
-    return name
-        .split(/[\s._-]+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join("");
 }
 
 export default function Header() {
@@ -25,7 +17,7 @@ export default function Header() {
     const menuRef = useRef<HTMLDivElement>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const displayName = getDisplayName(user?.email, user?.displayName);
-    const initials = getInitials(displayName);
+    const initials = getInitialsFromName(displayName);
     const isAdmin = isAdminEmail(user?.email);
 
     useEffect(() => {

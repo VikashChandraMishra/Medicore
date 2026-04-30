@@ -23,7 +23,10 @@ import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
 import { mockDoctors } from "../data/doctors";
 import { mockPatients } from "../data/patients";
+import useAuth from "../hooks/use-auth";
 import type { Patient, Visit } from "../types/patient";
+import { getInitialsFromName } from "../utils/initials";
+import { getScopedPatientsForEmail } from "../utils/patient-scope";
 
 const LIST_PAGE_SIZE = 10;
 const GRID_PAGE_SIZE = 8;
@@ -144,11 +147,11 @@ function getAgeFilterError(minAgeFilter: string, maxAgeFilter: string) {
 }
 
 export default function Patients() {
+    const { user } = useAuth();
     const [searchParams] = useSearchParams();
     const [view, setView] = useState<"list" | "grid">("grid");
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<PatientStatus | "all">("all");
-    const [doctorFilter, setDoctorFilter] = useState("all");
     const [roomFilter, setRoomFilter] = useState("all");
     const [minAgeFilter, setMinAgeFilter] = useState("");
     const [maxAgeFilter, setMaxAgeFilter] = useState("");
@@ -164,11 +167,10 @@ export default function Patients() {
     const closeTimerRef = useRef<number | null>(null);
 
     const debouncedSearch = useDebounce(search);
-
-    const doctorOptions = useMemo(() => {
-        const doctors = mockPatients.map((patient) => getDoctorMeta(patient).name);
-        return Array.from(new Set(doctors)).sort((a, b) => a.localeCompare(b));
-    }, []);
+    const scopedPatients = useMemo(
+        () => getScopedPatientsForEmail(user?.email),
+        [user?.email],
+    );
 
     const statusOptions = [
         { label: "All Status", value: "all" },
@@ -177,16 +179,9 @@ export default function Patients() {
         { label: "Critical", value: PATIENT_STATUS.CRITICAL },
     ];
 
-    const doctorSelectOptions = [
-        { label: "All Doctors", value: "all" },
-        ...doctorOptions.map((doctor) => ({
-            label: doctor,
-            value: doctor,
-        })),
-    ];
     const roomSelectOptions = [
         { label: "All Rooms", value: "all" },
-        ...mockPatients.map((patient) => {
+        ...scopedPatients.map((patient) => {
             const room = getStableRoomNumber(patient);
 
             return {
@@ -208,7 +203,6 @@ export default function Patients() {
     const hasActiveFilters =
         search.trim() !== "" ||
         statusFilter !== "all" ||
-        doctorFilter !== "all" ||
         roomFilter !== "all" ||
         minAgeFilter.trim() !== "" ||
         maxAgeFilter.trim() !== "" ||
@@ -217,7 +211,6 @@ export default function Patients() {
     const clearAllFilters = () => {
         setSearch("");
         setStatusFilter("all");
-        setDoctorFilter("all");
         setRoomFilter("all");
         setMinAgeFilter("");
         setMaxAgeFilter("");
@@ -241,7 +234,7 @@ export default function Patients() {
         const patientId = searchParams.get("patientId");
         if (!patientId) return;
 
-        const patient = mockPatients.find((item) => item.id === patientId);
+        const patient = scopedPatients.find((item) => item.id === patientId);
         if (!patient) return;
 
         if (closeTimerRef.current) {
@@ -252,7 +245,7 @@ export default function Patients() {
         setSelected(patient);
         setSelectedVisit(null);
         requestAnimationFrame(() => setIsDetailsOpen(true));
-    }, [searchParams]);
+    }, [scopedPatients, searchParams]);
 
     const closeDetails = () => {
         setSelectedVisit(null);
@@ -302,7 +295,7 @@ export default function Patients() {
     }, [isDetailsOpen, selected, selectedVisit]);
 
     const filtered = useMemo(() => {
-        return mockPatients.filter((patient) => {
+        return scopedPatients.filter((patient) => {
             const query = debouncedSearch.toLowerCase();
             const searchable = [
                 getFullName(patient),
@@ -322,8 +315,6 @@ export default function Patients() {
             const matchesSearch = searchable.includes(query);
             const matchesStatus =
                 statusFilter === "all" || patient.status === statusFilter;
-            const matchesDoctor =
-                doctorFilter === "all" || getDoctorMeta(patient).name === doctorFilter;
             const matchesRoom =
                 roomFilter === "all" || getStableRoomNumber(patient) === roomFilter;
             if (ageFilterError) return false;
@@ -338,13 +329,12 @@ export default function Patients() {
             return (
                 matchesSearch &&
                 matchesStatus &&
-                matchesDoctor &&
                 matchesRoom &&
                 matchesMinAge &&
                 matchesMaxAge
             );
         });
-    }, [ageFilterError, debouncedSearch, doctorFilter, maxAgeFilter, minAgeFilter, roomFilter, statusFilter]);
+    }, [ageFilterError, debouncedSearch, maxAgeFilter, minAgeFilter, roomFilter, scopedPatients, statusFilter]);
 
     const sortedPatients = useMemo(() => {
         if (sortBy === SORT_OPTIONS.NONE) return filtered;
@@ -370,7 +360,7 @@ export default function Patients() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, doctorFilter, maxAgeFilter, minAgeFilter, roomFilter, sortBy, statusFilter, view]);
+    }, [debouncedSearch, maxAgeFilter, minAgeFilter, roomFilter, sortBy, statusFilter, view]);
 
     const pageSize = view === "grid" ? GRID_PAGE_SIZE : LIST_PAGE_SIZE;
     const totalPages = Math.max(1, Math.ceil(sortedPatients.length / pageSize));
@@ -412,14 +402,6 @@ export default function Patients() {
                                 setStatusFilter(value as PatientStatus | "all")
                             }
                             ariaLabel="Filter by status"
-                        />
-
-                        <Select
-                            className="w-36 [&_button]:h-9 [&_button]:rounded-lg"
-                            value={doctorFilter}
-                            options={doctorSelectOptions}
-                            onValueChange={setDoctorFilter}
-                            ariaLabel="Filter by doctor"
                         />
 
                         <Select
@@ -709,11 +691,7 @@ export default function Patients() {
                                                                 ? "bg-white text-[#0b1f4d]"
                                                                 : "bg-stone-100 text-stone-700"
                                                                 }`}>
-                                                                {doctor.name
-                                                                    .split(" ")
-                                                                    .slice(-2)
-                                                                    .map((part) => part.charAt(0))
-                                                                    .join("")}
+                                                                {getInitialsFromName(doctor.name)}
                                                             </div>
                                                             <div>
                                                                 <p className={`max-w-37.5 truncate font-medium ${getSelectedTextClass(isSelected, "text-gray-950")}`}>
@@ -908,11 +886,11 @@ export default function Patients() {
 
                 {selectedVisit && (
                     <div
-                        className="absolute inset-0 z-40 flex items-center justify-center px-4"
+                        className="fixed inset-0 z-40 flex items-center justify-center px-4"
                         onClick={() => setSelectedVisit(null)}
                     >
                         <div
-                            className="max-h-[calc(100%-3rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                            className="h-[calc(100vh-3rem)] max-h-120 w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="mb-5 flex items-start justify-between gap-4">

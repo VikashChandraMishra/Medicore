@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { USER_ROLES, USER_STATUS, type UserRole, type UserStatus } from "../../constants/user";
 import { mockUsers } from "../../data/users";
 import type { User } from "../../types/user";
+import { getInitialsFromName } from "../../utils/initials";
 import Badge, { type BadgeTone } from "../ui/Badge";
 import DataTable from "../ui/DataTable";
 import Input from "../ui/Input";
@@ -50,11 +51,7 @@ function getStatusTone(status: UserStatus): BadgeTone {
 }
 
 function getInitials(user: User) {
-    return user.displayName
-        .split(" ")
-        .map((part) => part.charAt(0))
-        .slice(0, 2)
-        .join("");
+    return getInitialsFromName(user.displayName);
 }
 
 type UserDirectoryProps = {

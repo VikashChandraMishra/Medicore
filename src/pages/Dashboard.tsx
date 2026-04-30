@@ -10,7 +10,7 @@ import {
     UserCheck,
     Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
     Area,
@@ -25,11 +25,12 @@ import UserDirectory from "../components/dashboard/UserDirectory";
 import Badge, { type BadgeTone } from "../components/ui/Badge";
 import DataTable from "../components/ui/DataTable";
 import { NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
+import { USER_STATUS } from "../constants/user";
 import { mockDoctors } from "../data/doctors";
-import { mockPatients } from "../data/patients";
 import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
 import { notify } from "../utils/toast";
+import { getDoctorByEmail, getScopedPatientsForEmail } from "../utils/patient-scope";
 import type { Note, Patient, Visit } from "../types/patient";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -64,14 +65,16 @@ function getLatestVisit(patient: Patient) {
     return [...patient.visits].sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 }
 
-function getLatestActivityDate() {
-    const dates = mockPatients.flatMap((patient) => [
+function getLatestActivityDate(patients: Patient[]) {
+    const dates = patients.flatMap((patient) => [
         patient.updatedAt,
         patient.createdAt,
         ...(patient.lastVisitAt ? [patient.lastVisitAt] : []),
         ...patient.visits.map((visit) => visit.createdAt),
         ...patient.notes.map((note) => note.createdAt),
     ]);
+
+    if (dates.length === 0) return new Date();
 
     return new Date(Math.max(...dates.map((date) => date.getTime())));
 }
@@ -162,8 +165,8 @@ function createTimelineItemFromNote(patient: Patient, note: Note, index: number)
     };
 }
 
-function getCriticalAlerts() {
-    const alerts = mockPatients.flatMap((patient) => {
+function getCriticalAlerts(patients: Patient[]) {
+    const alerts = patients.flatMap((patient) => {
         const latestVisit = getLatestVisit(patient);
         const patientAlerts: CriticalAlert[] = [];
 
@@ -236,37 +239,46 @@ export default function Dashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<DashboardTab>("alerts");
-    const operationalNow = getLatestActivityDate();
+    const showUserDirectory = isAdminEmail(user?.email);
+    const currentDoctor = getDoctorByEmail(user?.email);
+    const scopedPatients = getScopedPatientsForEmail(user?.email);
+    const operationalNow = getLatestActivityDate(scopedPatients);
     const lastSevenDaysStart = new Date(
         operationalNow.getTime() - LAST_SEVEN_DAYS_IN_MS,
     );
 
-    const activePatients = mockPatients.filter(
+    useEffect(() => {
+        if (!showUserDirectory && activeTab === "users") {
+            setActiveTab("alerts");
+        }
+    }, [activeTab, showUserDirectory]);
+
+    const activePatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.ACTIVE,
     ).length;
-    const inactivePatients = mockPatients.filter(
+    const inactivePatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.INACTIVE,
     ).length;
-    const criticalPatients = mockPatients.filter(
+    const criticalPatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.CRITICAL,
     ).length;
-    const recentVisits = mockPatients.flatMap((patient) =>
+    const recentVisits = scopedPatients.flatMap((patient) =>
         patient.visits
             .filter((visit) => visit.date >= lastSevenDaysStart)
             .map((visit) => ({ patient, visit })),
     );
-    const allVisits = mockPatients.flatMap((patient) =>
+    const allVisits = scopedPatients.flatMap((patient) =>
         patient.visits.map((visit) => ({ patient, visit })),
     );
-    const criticalAlerts = getCriticalAlerts();
-    const activityFeed = mockPatients
+    const criticalAlerts = getCriticalAlerts(scopedPatients);
+    const activityFeed = scopedPatients
         .flatMap((patient) => [
             ...patient.visits.map((visit, index) => createTimelineItemFromVisit(patient, visit, index)),
             ...patient.notes.map((note, index) => createTimelineItemFromNote(patient, note, index)),
         ])
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, 8);
-    const patientSnapshot = [...mockPatients]
+    const patientSnapshot = [...scopedPatients]
         .sort(
             (a, b) =>
                 (b.lastVisitAt?.getTime() ?? 0) - (a.lastVisitAt?.getTime() ?? 0),
@@ -274,7 +286,6 @@ export default function Dashboard() {
         .slice(0, 7);
     const patientSnapshotTotalPages = 1;
     const dailyVisitTrend = getDailyVisitTrend(allVisits, operationalNow);
-    const showUserDirectory = isAdminEmail(user?.email);
     const dashboardTabs: Array<{ label: string; value: DashboardTab }> = [
         { label: "Critical Alerts", value: "alerts" },
         { label: "Visits in Last 7 Days", value: "visits" },
@@ -285,7 +296,7 @@ export default function Dashboard() {
     const dashboardMetrics = [
         {
             label: "Total Patients",
-            value: mockPatients.length,
+            value: scopedPatients.length,
             icon: Users,
         },
         {
@@ -307,8 +318,16 @@ export default function Dashboard() {
 
     const handleSimulateEmergencyAlert = async () => {
         const criticalPatient =
-            mockPatients.find((patient) => patient.status === PATIENT_STATUS.CRITICAL) ??
-            mockPatients[0];
+            scopedPatients.find((patient) => patient.status === PATIENT_STATUS.CRITICAL) ??
+            scopedPatients[0];
+
+        if (!criticalPatient) {
+            notify.error("No patients available", {
+                description: "There are no patients in this dashboard scope.",
+            });
+            return;
+        }
+
         const latestVisit = getLatestVisit(criticalPatient);
         const title = "Emergency alert";
         const body = `${getFullName(criticalPatient)} - ${latestVisit?.diagnosis ?? "urgent review needed"}`;
@@ -366,14 +385,38 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleSimulateEmergencyAlert}
-                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[#0b1f4d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#102a63] active:scale-[0.98]"
-                >
-                    <BellRing className="h-4 w-4" />
-                    Simulate Emergency Alert
-                </button>
+                {showUserDirectory && (
+                    <button
+                        onClick={handleSimulateEmergencyAlert}
+                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[#0b1f4d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#102a63] active:scale-[0.98]"
+                    >
+                        <BellRing className="h-4 w-4" />
+                        Simulate Emergency Alert
+                    </button>
+                )}
             </div>
+
+            {currentDoctor && (
+                <section className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                                Doctor profile
+                            </p>
+                            <h2 className="mt-1 text-xl font-semibold text-gray-950">
+                                {currentDoctor.displayName}
+                            </h2>
+                            <p className="mt-1 text-sm text-gray-500">{currentDoctor.email}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Badge tone="accent">{currentDoctor.id}</Badge>
+                            <Badge tone={currentDoctor.status === USER_STATUS.ACTIVE ? "green" : "amber"}>
+                                {formatLabel(currentDoctor.status)}
+                            </Badge>
+                        </div>
+                    </div>
+                </section>
+            )}
 
             <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 {dashboardMetrics.map((metric) => {
@@ -391,7 +434,6 @@ export default function Dashboard() {
                 })}
             </section>
 
-            {showUserDirectory && (
             <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
                 <div className="flex gap-1 overflow-x-auto border-b border-gray-100 p-2" role="tablist" aria-label="Dashboard sections">
                     {dashboardTabs.map((tab) => {
@@ -425,25 +467,31 @@ export default function Dashboard() {
                             <AlertTriangle className="h-5 w-5 text-red-600" />
                         </div>
                         <div className="divide-y divide-gray-100">
-                            {criticalAlerts.map((alert) => (
-                                <Link
-                                    key={alert.id}
-                                    to={getPatientDetailUrl(alert.patient)}
-                                    className="flex cursor-pointer items-start gap-4 px-5 py-4 transition hover:bg-gray-50 active:bg-gray-100"
-                                >
-                                    <span className={`mt-1 rounded-md p-2 ${alert.severity === "critical" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
-                                        {alert.severity === "critical" ? <HeartPulse className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <p className="font-semibold text-gray-950">{getFullName(alert.patient)}</p>
-                                            <span className="text-xs font-medium text-gray-400">{formatDateTime(alert.lastVisitAt)}</span>
+                            {criticalAlerts.length === 0 ? (
+                                <p className="px-5 py-4 text-sm text-gray-500">
+                                    No critical alerts in this patient scope.
+                                </p>
+                            ) : (
+                                criticalAlerts.map((alert) => (
+                                    <Link
+                                        key={alert.id}
+                                        to={getPatientDetailUrl(alert.patient)}
+                                        className="flex cursor-pointer items-start gap-4 px-5 py-4 transition hover:bg-gray-50 active:bg-gray-100"
+                                    >
+                                        <span className={`mt-1 rounded-md p-2 ${alert.severity === "critical" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                                            {alert.severity === "critical" ? <HeartPulse className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <p className="font-semibold text-gray-950">{getFullName(alert.patient)}</p>
+                                                <span className="text-xs font-medium text-gray-400">{formatDateTime(alert.lastVisitAt)}</span>
+                                            </div>
+                                            <p className="mt-1 line-clamp-2 text-sm text-gray-600">{alert.issue}</p>
+                                            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-400">{alert.source}</p>
                                         </div>
-                                        <p className="mt-1 line-clamp-2 text-sm text-gray-600">{alert.issue}</p>
-                                        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-400">{alert.source}</p>
-                                    </div>
-                                </Link>
-                            ))}
+                                    </Link>
+                                ))
+                            )}
                         </div>
                     </>
                 )}
@@ -481,20 +529,26 @@ export default function Dashboard() {
                             <p className="text-sm text-gray-500">Visits and notes sorted by created time</p>
                         </div>
                         <div className="max-h-136 divide-y divide-gray-100 overflow-y-auto">
-                            {activityFeed.map((item) => (
-                                <div key={item.id} className="flex gap-3 px-5 py-4">
-                                    <span className={`mt-1 rounded-md p-2 ${item.isUrgent ? "bg-red-50 text-red-700" : "bg-gray-100 text-gray-600"}`}>
-                                        {item.type === "visit" ? <Stethoscope className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <p className="font-medium text-gray-950">{item.title}</p>
-                                            <span className="shrink-0 text-xs text-gray-400">{formatRelativeTime(item.createdAt, operationalNow)}</span>
+                            {activityFeed.length === 0 ? (
+                                <p className="px-5 py-4 text-sm text-gray-500">
+                                    No recent activity in this patient scope.
+                                </p>
+                            ) : (
+                                activityFeed.map((item) => (
+                                    <div key={item.id} className="flex gap-3 px-5 py-4">
+                                        <span className={`mt-1 rounded-md p-2 ${item.isUrgent ? "bg-red-50 text-red-700" : "bg-gray-100 text-gray-600"}`}>
+                                            {item.type === "visit" ? <Stethoscope className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <p className="font-medium text-gray-950">{item.title}</p>
+                                                <span className="shrink-0 text-xs text-gray-400">{formatRelativeTime(item.createdAt, operationalNow)}</span>
+                                            </div>
+                                            <p className="mt-1 line-clamp-2 text-sm text-gray-500">{item.detail}</p>
                                         </div>
-                                        <p className="mt-1 line-clamp-2 text-sm text-gray-500">{item.detail}</p>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </>
                 )}
@@ -547,37 +601,44 @@ export default function Dashboard() {
                                 </div>
                             }
                         >
-                            {patientSnapshot.map((patient, index) => (
-                                <tr
-                                    key={patient.id}
-                                    onClick={() => navigate(getPatientDetailUrl(patient))}
-                                    className="cursor-pointer transition hover:bg-gray-50 active:bg-gray-100"
-                                >
-                                    <td className="whitespace-nowrap px-5 py-4 text-gray-500">
-                                        {index + 1}
+                            {patientSnapshot.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-5 py-4 text-sm text-gray-500">
+                                        No patients in this scope.
                                     </td>
-                                    <td className="px-5 py-4">
-                                        <span className="font-medium text-gray-950 transition hover:text-[#0b1f4d]">
-                                            {getFullName(patient)}
-                                        </span>
-                                        <p className="text-xs text-gray-500">{patient.address.city}</p>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                                <Badge tone={getStatusTone(patient.status)}>
-                                                    {formatLabel(patient.status)}
-                                                </Badge>
-                                            </td>
-                                    <td className="px-5 py-4 text-gray-600">{formatShortDate(patient.lastVisitAt)}</td>
-                                    <td className="px-5 py-4 text-right font-semibold text-gray-950">{patient.chronicConditions.length}</td>
                                 </tr>
-                            ))}
+                            ) : (
+                                patientSnapshot.map((patient, index) => (
+                                    <tr
+                                        key={patient.id}
+                                        onClick={() => navigate(getPatientDetailUrl(patient))}
+                                        className="cursor-pointer transition hover:bg-gray-50 active:bg-gray-100"
+                                    >
+                                        <td className="whitespace-nowrap px-5 py-4 text-gray-500">
+                                            {index + 1}
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <span className="font-medium text-gray-950 transition hover:text-[#0b1f4d]">
+                                                {getFullName(patient)}
+                                            </span>
+                                            <p className="text-xs text-gray-500">{patient.address.city}</p>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <Badge tone={getStatusTone(patient.status)}>
+                                                {formatLabel(patient.status)}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-5 py-4 text-gray-600">{formatShortDate(patient.lastVisitAt)}</td>
+                                        <td className="px-5 py-4 text-right font-semibold text-gray-950">{patient.chronicConditions.length}</td>
+                                    </tr>
+                                ))
+                            )}
                         </DataTable>
                     </>
                 )}
 
                 {activeTab === "users" && showUserDirectory && <UserDirectory embedded />}
             </section>
-            )}
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { RouterProvider } from "react-router";
 import { Toaster } from "sonner";
+import { AuthProvider } from "./contexts/AuthContext";
 import { router } from "./router";
 
 function App() {
@@ -21,7 +22,9 @@ function App() {
           },
         }}
       />
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </>
   );
 }

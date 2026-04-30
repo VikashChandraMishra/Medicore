@@ -1,4 +1,22 @@
-import { Check, LayoutGrid, List, MoreVertical, Plus, Search } from "lucide-react";
+import {
+    Activity,
+    CalendarDays,
+    Check,
+    ChevronLeft,
+    ChevronRight,
+    Clock3,
+    FileText,
+    Filter,
+    LayoutGrid,
+    List,
+    MapPin,
+    MoreHorizontal,
+    MoreVertical,
+    Search,
+    ShieldCheck,
+    UserRound,
+    UsersRound,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import CloseButton from "../components/ui/CloseButton";
@@ -10,6 +28,18 @@ import { mockPatients } from "../data/patients";
 import type { Patient, Visit } from "../types/patient";
 
 const LIST_PAGE_SIZE = 10;
+const GRID_PAGE_SIZE = 8;
+
+const SORT_OPTIONS = {
+    NAME_ASC: "NAME_ASC",
+    AGE_ASC: "AGE_ASC",
+    AGE_DESC: "AGE_DESC",
+    LAST_VISIT_DESC: "LAST_VISIT_DESC",
+    LAST_VISIT_ASC: "LAST_VISIT_ASC",
+    ROOM_ASC: "ROOM_ASC",
+} as const;
+
+type SortOption = typeof SORT_OPTIONS[keyof typeof SORT_OPTIONS];
 
 function useDebounce<T>(value: T, delay = 300) {
     const [debounced, setDebounced] = useState(value);
@@ -74,15 +104,56 @@ function getRoomNumber(patient: Patient, index: number) {
     return `${prefix}-${number}`;
 }
 
-function getStatusClass(status: PatientStatus) {
+function getStableRoomNumber(patient: Patient) {
+    const patientIndex = mockPatients.findIndex((item) => item.id === patient.id);
+    return getRoomNumber(patient, Math.max(0, patientIndex));
+}
+
+function getStatusSoftClass(status: PatientStatus) {
     if (status === PATIENT_STATUS.ACTIVE) return "bg-green-50 text-green-700";
-    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-50 text-red-600";
-    return "bg-amber-50 text-amber-600";
+    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-50 text-red-700";
+    return "bg-amber-50 text-amber-700";
+}
+
+function StatusBadge({ status, isSelected = false }: { status: PatientStatus; isSelected?: boolean }) {
+    return (
+        <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium ${isSelected
+            ? "bg-white text-[#0b1f4d]"
+            : getStatusSoftClass(status)
+            }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-[#0b1f4d]" : "bg-current"}`} />
+            {formatLabel(status)}
+        </span>
+    );
 }
 
 function truncateText(value: string, maxLength = 96) {
     if (value.length <= maxLength) return value;
     return `${value.slice(0, maxLength).trim()}...`;
+}
+
+function getSelectedTextClass(isSelected: boolean, defaultClass: string) {
+    return isSelected ? "text-white" : defaultClass;
+}
+
+function getAgeFilterError(minAgeFilter: string, maxAgeFilter: string) {
+    const min = minAgeFilter.trim();
+    const max = maxAgeFilter.trim();
+    const agePattern = /^\d+$/;
+
+    if (min && !agePattern.test(min)) return "Minimum age must be a whole number.";
+    if (max && !agePattern.test(max)) return "Maximum age must be a whole number.";
+
+    const minAge = min ? Number(min) : null;
+    const maxAge = max ? Number(max) : null;
+
+    if (minAge !== null && minAge > 120) return "Minimum age must be 120 or less.";
+    if (maxAge !== null && maxAge > 120) return "Maximum age must be 120 or less.";
+    if (minAge !== null && maxAge !== null && minAge > maxAge) {
+        return "Minimum age cannot be greater than maximum age.";
+    }
+
+    return "";
 }
 
 export default function Patients() {
@@ -91,12 +162,18 @@ export default function Patients() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<PatientStatus | "all">("all");
     const [doctorFilter, setDoctorFilter] = useState("all");
+    const [roomFilter, setRoomFilter] = useState("all");
+    const [minAgeFilter, setMinAgeFilter] = useState("");
+    const [maxAgeFilter, setMaxAgeFilter] = useState("");
+    const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS.NAME_ASC);
     const [selected, setSelected] = useState<Patient | null>(null);
     const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [showMoreFilters, setShowMoreFilters] = useState(false);
     const [visitView, setVisitView] = useState<"timeline" | "cards">("timeline");
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const detailsRef = useRef<HTMLDivElement | null>(null);
     const closeTimerRef = useRef<number | null>(null);
 
     const debouncedSearch = useDebounce(search);
@@ -120,6 +197,68 @@ export default function Patients() {
             value: doctor,
         })),
     ];
+    const roomSelectOptions = [
+        { label: "All Rooms", value: "all" },
+        ...mockPatients.map((patient) => {
+            const room = getStableRoomNumber(patient);
+
+            return {
+                label: room,
+                value: room,
+            };
+        }),
+    ];
+    const sortOptions = [
+        { label: "Name A-Z", value: SORT_OPTIONS.NAME_ASC },
+        { label: "Age low-high", value: SORT_OPTIONS.AGE_ASC },
+        { label: "Age high-low", value: SORT_OPTIONS.AGE_DESC },
+        { label: "Recent visit", value: SORT_OPTIONS.LAST_VISIT_DESC },
+        { label: "Oldest visit", value: SORT_OPTIONS.LAST_VISIT_ASC },
+        { label: "Room number", value: SORT_OPTIONS.ROOM_ASC },
+    ];
+    const patientStats = [
+        {
+            label: "Critical",
+            value: mockPatients.filter((patient) => patient.status === PATIENT_STATUS.CRITICAL).length,
+            icon: Activity,
+            iconClass: "bg-red-50 text-red-600",
+        },
+        {
+            label: "Active",
+            value: mockPatients.filter((patient) => patient.status === PATIENT_STATUS.ACTIVE).length,
+            icon: ShieldCheck,
+            iconClass: "bg-green-50 text-green-700",
+        },
+        {
+            label: "Inactive",
+            value: mockPatients.filter((patient) => patient.status === PATIENT_STATUS.INACTIVE).length,
+            icon: Clock3,
+            iconClass: "bg-amber-50 text-amber-600",
+        },
+        {
+            label: "Total Patients",
+            value: mockPatients.length,
+            icon: UsersRound,
+            iconClass: "bg-blue-50 text-[#0b1f4d]",
+        },
+    ];
+    const ageFilterError = getAgeFilterError(minAgeFilter, maxAgeFilter);
+    const hasActiveFilters =
+        search.trim() !== "" ||
+        statusFilter !== "all" ||
+        doctorFilter !== "all" ||
+        roomFilter !== "all" ||
+        minAgeFilter.trim() !== "" ||
+        maxAgeFilter.trim() !== "";
+
+    const clearAllFilters = () => {
+        setSearch("");
+        setStatusFilter("all");
+        setDoctorFilter("all");
+        setRoomFilter("all");
+        setMinAgeFilter("");
+        setMaxAgeFilter("");
+    };
 
     useEffect(() => {
         const t = setTimeout(() => setLoading(false), 800);
@@ -181,6 +320,19 @@ export default function Patients() {
         requestAnimationFrame(() => setIsDetailsOpen(true));
     };
 
+    useEffect(() => {
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!selected || !isDetailsOpen || selectedVisit) return;
+
+            if (!detailsRef.current?.contains(event.target as Node)) {
+                closeDetails();
+            }
+        };
+
+        document.addEventListener("mousedown", handlePointerDown);
+        return () => document.removeEventListener("mousedown", handlePointerDown);
+    }, [isDetailsOpen, selected, selectedVisit]);
+
     const filtered = useMemo(() => {
         return mockPatients.filter((patient) => {
             const query = debouncedSearch.toLowerCase();
@@ -204,70 +356,139 @@ export default function Patients() {
                 statusFilter === "all" || patient.status === statusFilter;
             const matchesDoctor =
                 doctorFilter === "all" || getDoctorMeta(patient).name === doctorFilter;
+            const matchesRoom =
+                roomFilter === "all" || getStableRoomNumber(patient) === roomFilter;
+            if (ageFilterError) return false;
 
-            return matchesSearch && matchesStatus && matchesDoctor;
+            const minAge = Number(minAgeFilter);
+            const maxAge = Number(maxAgeFilter);
+            const matchesMinAge =
+                !minAgeFilter.trim() || Number.isNaN(minAge) || patient.age >= minAge;
+            const matchesMaxAge =
+                !maxAgeFilter.trim() || Number.isNaN(maxAge) || patient.age <= maxAge;
+
+            return (
+                matchesSearch &&
+                matchesStatus &&
+                matchesDoctor &&
+                matchesRoom &&
+                matchesMinAge &&
+                matchesMaxAge
+            );
         });
-    }, [debouncedSearch, doctorFilter, statusFilter]);
+    }, [ageFilterError, debouncedSearch, doctorFilter, maxAgeFilter, minAgeFilter, roomFilter, statusFilter]);
+
+    const sortedPatients = useMemo(() => {
+        return [...filtered].sort((a, b) => {
+            if (sortBy === SORT_OPTIONS.AGE_ASC) return a.age - b.age;
+            if (sortBy === SORT_OPTIONS.AGE_DESC) return b.age - a.age;
+            if (sortBy === SORT_OPTIONS.LAST_VISIT_ASC) {
+                return (a.lastVisitAt?.getTime() ?? 0) - (b.lastVisitAt?.getTime() ?? 0);
+            }
+            if (sortBy === SORT_OPTIONS.LAST_VISIT_DESC) {
+                return (b.lastVisitAt?.getTime() ?? 0) - (a.lastVisitAt?.getTime() ?? 0);
+            }
+            if (sortBy === SORT_OPTIONS.ROOM_ASC) {
+                return getStableRoomNumber(a).localeCompare(getStableRoomNumber(b), undefined, {
+                    numeric: true,
+                });
+            }
+
+            return getFullName(a).localeCompare(getFullName(b));
+        });
+    }, [filtered, sortBy]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, doctorFilter, statusFilter, view]);
+    }, [debouncedSearch, doctorFilter, maxAgeFilter, minAgeFilter, roomFilter, sortBy, statusFilter, view]);
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / LIST_PAGE_SIZE));
+    const pageSize = view === "grid" ? GRID_PAGE_SIZE : LIST_PAGE_SIZE;
+    const totalPages = Math.max(1, Math.ceil(sortedPatients.length / pageSize));
     const safeCurrentPage = Math.min(currentPage, totalPages);
-    const pageStartIndex = (safeCurrentPage - 1) * LIST_PAGE_SIZE;
-    const paginatedPatients = filtered.slice(
+    const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+    const paginatedPatients = sortedPatients.slice(
         pageStartIndex,
-        pageStartIndex + LIST_PAGE_SIZE,
+        pageStartIndex + pageSize,
     );
+    const visibleStart = sortedPatients.length === 0 ? 0 : pageStartIndex + 1;
+    const visibleEnd = Math.min(pageStartIndex + paginatedPatients.length, sortedPatients.length);
+    const recordSummary = `Showing ${visibleStart} to ${visibleEnd} of ${sortedPatients.length} patients`;
 
     return (
-        <div className="relative h-full bg-gray-50">
+        <div className="relative min-h-full bg-gray-50 pb-8">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+                <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">Patients</h1>
+                        <h1 className="text-2xl font-semibold text-gray-950">Patients</h1>
                         <p className="text-sm text-gray-500">
-                            {filtered.length} of {mockPatients.length} records
+                            Manage and monitor patient health records
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 items-center">
-                        {view === "grid" && (
-                            <>
-                                <Input
-                                    placeholder="Search patients..."
-                                    className="w-56"
-                                    leftIcon={<Search className="h-4 w-4" />}
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Input
+                            placeholder="Search patients..."
+                            className="h-9 w-42 rounded-lg"
+                            leftIcon={<Search className="h-4 w-4" />}
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
 
-                                <Select
-                                    className="w-36"
-                                    value={statusFilter}
-                                    options={statusOptions}
-                                    onValueChange={(value) =>
-                                        setStatusFilter(value as PatientStatus | "all")
-                                    }
-                                    ariaLabel="Filter by status"
-                                />
+                        <Select
+                            className="w-28 [&_button]:h-9 [&_button]:rounded-lg"
+                            value={statusFilter}
+                            options={statusOptions}
+                            onValueChange={(value) =>
+                                setStatusFilter(value as PatientStatus | "all")
+                            }
+                            ariaLabel="Filter by status"
+                        />
 
-                                <Select
-                                    className="w-48"
-                                    value={doctorFilter}
-                                    options={doctorSelectOptions}
-                                    onValueChange={setDoctorFilter}
-                                    ariaLabel="Filter by doctor"
-                                />
-                            </>
-                        )}
+                        <Select
+                            className="w-36 [&_button]:h-9 [&_button]:rounded-lg"
+                            value={doctorFilter}
+                            options={doctorSelectOptions}
+                            onValueChange={setDoctorFilter}
+                            ariaLabel="Filter by doctor"
+                        />
+
+                        <button
+                            type="button"
+                            onClick={() => setShowMoreFilters((open) => !open)}
+                            className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 px-3 text-sm font-medium shadow-sm transition active:scale-[0.98] ${showMoreFilters
+                                ? "bg-[#0b1f4d] text-white"
+                                : "bg-white text-gray-700 hover:bg-gray-50"
+                                }`}
+                            aria-label="More filters"
+                            aria-expanded={showMoreFilters}
+                            title="More filters"
+                        >
+                            <Filter className="h-4 w-4" />
+                            More
+                        </button>
+
+                        <Select
+                            className="w-39 [&_button]:h-9 [&_button]:rounded-lg"
+                            value={sortBy}
+                            options={sortOptions}
+                            onValueChange={(value) => setSortBy(value as SortOption)}
+                            ariaLabel="Sort patients"
+                        />
+
+                        <button
+                            type="button"
+                            onClick={clearAllFilters}
+                            disabled={!hasActiveFilters}
+                            className="h-9 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            Clear all
+                        </button>
 
                         <div className="flex overflow-hidden rounded-md border-2 border-[#0b1f4d] divide-x-2 divide-[#0b1f4d]">
                             <button
                                 aria-label="Grid view"
                                 title="Grid view"
-                                className={`grid h-10 w-12 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "grid" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
+                                className={`grid h-9 w-10 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "grid" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
                                 onClick={() => setView("grid")}
                             >
                                 <LayoutGrid className="h-5 w-5" />
@@ -275,7 +496,7 @@ export default function Patients() {
                             <button
                                 aria-label="List view"
                                 title="List view"
-                                className={`grid h-10 w-12 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "list" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
+                                className={`grid h-9 w-10 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "list" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
                                 onClick={() => setView("list")}
                             >
                                 <List className="h-5 w-5" />
@@ -284,126 +505,216 @@ export default function Patients() {
                     </div>
                 </div>
 
+                <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {patientStats.map((stat) => {
+                        const Icon = stat.icon;
+
+                        return (
+                            <div
+                                key={stat.label}
+                                className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                            >
+                                <span className={`grid h-12 w-12 place-items-center rounded-xl ${stat.iconClass}`}>
+                                    <Icon className="h-6 w-6" />
+                                </span>
+                                <div>
+                                    <p className="text-xl font-semibold text-gray-950">{stat.value}</p>
+                                    <p className="text-sm text-gray-500">{stat.label}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </section>
+
+                {showMoreFilters && (
+                    <div className="mb-6 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Select
+                                className="w-28 [&_button]:h-9 [&_button]:rounded-lg"
+                                value={roomFilter}
+                                options={roomSelectOptions}
+                                onValueChange={setRoomFilter}
+                                ariaLabel="Filter by room number"
+                            />
+
+                            <Input
+                                type="number"
+                                min={0}
+                                max={120}
+                                step={1}
+                                value={minAgeFilter}
+                                onChange={(e) => setMinAgeFilter(e.target.value)}
+                                placeholder="Min age"
+                                className={`h-9 w-30 rounded-lg [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`}
+                            />
+
+                            <Input
+                                type="number"
+                                min={0}
+                                max={120}
+                                step={1}
+                                value={maxAgeFilter}
+                                onChange={(e) => setMaxAgeFilter(e.target.value)}
+                                placeholder="Max age"
+                                className={`h-9 w-30 rounded-lg [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`}
+                            />
+
+                        </div>
+                        {ageFilterError && (
+                            <p className="mt-3 text-sm text-red-600">
+                                {ageFilterError}
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="grid md:grid-cols-3 gap-4">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <div key={i} className="h-40 bg-gray-200 animate-pulse rounded-xl" />
                         ))}
                     </div>
-                ) : filtered.length === 0 && view === "grid" ? (
+                ) : sortedPatients.length === 0 && view === "grid" ? (
                     <div className="text-center py-20 text-gray-500">
                         No patients found.
                     </div>
                 ) : view === "grid" ? (
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {filtered.map((patient) => (
-                            <div
-                                key={patient.id}
-                                onClick={() => openDetails(patient)}
-                                className="cursor-pointer rounded-xl bg-white p-4 shadow transition hover:shadow-md active:scale-[0.99]"
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <h2 className="font-semibold">{getFullName(patient)}</h2>
-                                        <p className="text-sm text-gray-500">
+                    <>
+                        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
+                            {paginatedPatients.map((patient) => {
+                                const isSelected = selected?.id === patient.id && isDetailsOpen;
+
+                                return (
+                                    <div
+                                        key={patient.id}
+                                        onClick={() => openDetails(patient)}
+                                        className={`cursor-pointer rounded-lg p-4 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${isSelected
+                                            ? "bg-[#0b1f4d] text-white"
+                                            : "bg-white text-gray-800"
+                                            }`}
+                                    >
+                                        <div className="mb-3 flex items-center justify-between gap-3">
+                                            <StatusBadge status={patient.status} isSelected={isSelected} />
+                                            <span className={`text-sm ${getSelectedTextClass(isSelected, "text-gray-500")}`}>
+                                                {formatDate(patient.lastVisitAt)}
+                                            </span>
+                                        </div>
+
+                                        <h2 className="text-[1.75rem] font-semibold leading-tight">{getFullName(patient)}</h2>
+                                        <p className={`mt-1 text-sm ${getSelectedTextClass(isSelected, "text-gray-600")}`}>
                                             {getPrimaryCondition(patient)}
                                         </p>
-                                    </div>
-                                    <span className="text-xs rounded-full bg-gray-100 px-2 py-1">
-                                        {formatLabel(patient.status)}
-                                    </span>
-                                </div>
 
-                                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                                    <p>Age: {patient.age}</p>
-                                    <p>Visits: {patient.visits.length}</p>
-                                    <p>Notes: {patient.notes.length}</p>
-                                    <p>{patient.address.city}</p>
-                                    <p className="col-span-2 text-gray-600">
-                                        Last visit: {formatDate(patient.lastVisitAt)}
-                                    </p>
-                                </div>
+                                        <div className={`mt-3 grid grid-cols-3 gap-2 border-t pt-3 text-sm ${isSelected ? "border-white/20" : "border-gray-100"}`}>
+                                            <p className="inline-flex items-center gap-2">
+                                                <UserRound className="h-4 w-4" />
+                                                {patient.age} yrs
+                                            </p>
+                                            <p className="inline-flex items-center gap-2">
+                                                <Activity className="h-4 w-4" />
+                                                {patient.visits.length} {patient.visits.length === 1 ? "visit" : "visits"}
+                                            </p>
+                                            <p className="inline-flex items-center gap-2">
+                                                <FileText className="h-4 w-4" />
+                                                {patient.notes.length} {patient.notes.length === 1 ? "note" : "notes"}
+                                            </p>
+                                        </div>
+
+                                        <p className={`mt-3 inline-flex items-center gap-2 text-sm ${getSelectedTextClass(isSelected, "text-gray-600")}`}>
+                                            <MapPin className="h-4 w-4" />
+                                            {patient.address.city}
+                                        </p>
+
+                                        <div className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    openDetails(patient);
+                                                }}
+                                                className={`h-10 cursor-pointer rounded-md border px-4 text-sm font-semibold transition active:scale-[0.98] ${isSelected
+                                                    ? "border-white/60 bg-white text-[#0b1f4d]"
+                                                    : "border-gray-200 bg-white text-[#0b1f4d] hover:bg-gray-50"
+                                                    }`}
+                                            >
+                                                View
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(event) => event.stopPropagation()}
+                                                className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border transition active:scale-[0.98] ${isSelected
+                                                    ? "border-white/30 text-white hover:bg-white/10"
+                                                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                                    }`}
+                                                aria-label="Open appointment calendar"
+                                            >
+                                                <CalendarDays className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(event) => event.stopPropagation()}
+                                                className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border transition active:scale-[0.98] ${isSelected
+                                                    ? "border-white/30 text-white hover:bg-white/10"
+                                                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                                    }`}
+                                                aria-label="More patient actions"
+                                            >
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-6 grid gap-3 text-sm text-gray-600 md:grid-cols-[1fr_auto_1fr] md:items-center">
+                            <p>{recordSummary}</p>
+                            <div className="flex items-center justify-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                    disabled={safeCurrentPage === 1}
+                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    aria-label="Previous page"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                </button>
+                                {Array.from({ length: totalPages }).map((_, index) => {
+                                    const page = index + 1;
+
+                                    return (
+                                        <button
+                                            key={page}
+                                            type="button"
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`h-10 min-w-10 cursor-pointer rounded-md border px-3 font-medium transition active:scale-[0.98] ${safeCurrentPage === page
+                                                ? "border-[#0b1f4d] bg-[#0b1f4d] text-white"
+                                                : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                                    disabled={safeCurrentPage === totalPages}
+                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    aria-label="Next page"
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
                             </div>
-                        ))}
-                    </div>
+                            <div />
+                        </div>
+                    </>
                 ) : (
                     <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
-                        <div className="flex flex-col gap-5 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                            <h2 className="text-base font-semibold text-gray-950">
-                                Inpatient Patients List
-                            </h2>
-
-                            <button className="inline-flex cursor-pointer items-center gap-2 self-start rounded-full bg-[#0b1f4d] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#102a63] active:scale-[0.98] lg:self-auto">
-                                <Plus className="h-4 w-4" />
-                                Add New Patient
-                            </button>
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-4">
-                            <div className="flex max-w-full shrink-0 gap-1 overflow-x-auto rounded-full bg-gray-100 p-1 text-sm">
-                                <button
-                                    onClick={() => setStatusFilter("all")}
-                                    className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-2 transition active:scale-[0.98] ${statusFilter === "all" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
-                                >
-                                    Active
-                                </button>
-                                <button
-                                    onClick={() => setStatusFilter(PATIENT_STATUS.INACTIVE)}
-                                    className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-2 transition active:scale-[0.98] ${statusFilter === PATIENT_STATUS.INACTIVE ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
-                                >
-                                    Discharged
-                                </button>
-                                <button
-                                    onClick={() => setStatusFilter(PATIENT_STATUS.CRITICAL)}
-                                    className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-2 transition active:scale-[0.98] ${statusFilter === PATIENT_STATUS.CRITICAL ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
-                                >
-                                    Emergency Cases
-                                </button>
-                                <button className="cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-gray-500 transition hover:text-gray-800 active:scale-[0.98]">
-                                    Follow Up
-                                </button>
-                            </div>
-
-                            <div className="ml-auto flex flex-wrap items-center gap-2">
-                                <Select
-                                    className="w-48"
-                                    value={doctorFilter}
-                                    options={doctorSelectOptions}
-                                    onValueChange={setDoctorFilter}
-                                    ariaLabel="Filter by doctor"
-                                />
-
-                                <Select
-                                    className="w-40"
-                                    value={statusFilter}
-                                    options={statusOptions}
-                                    onValueChange={(value) =>
-                                        setStatusFilter(value as PatientStatus | "all")
-                                    }
-                                    ariaLabel="Filter by status"
-                                />
-
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search..."
-                                    leftIcon={<Search className="h-4 w-4" />}
-                                    className="w-64"
-                                />
-
-                                <button className="h-12 cursor-pointer rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.98]">
-                                    Sort By
-                                </button>
-                            </div>
-                        </div>
-
                         <div className="max-h-180 overflow-auto">
                             <table className="w-full min-w-245 border-collapse text-left text-sm">
                                 <thead className="sticky top-0 z-0 bg-white">
                                     <tr className="border-y border-gray-100 text-xs font-medium text-gray-500">
-                                        <th className="w-12 px-5 py-3">
-                                            <input type="checkbox" className="h-4 w-4 cursor-pointer rounded border-gray-300" />
-                                        </th>
                                         <th className="px-3 py-3">Admission Date</th>
                                         <th className="px-3 py-3">Patient</th>
                                         <th className="px-3 py-3">Diagnosis</th>
@@ -418,58 +729,60 @@ export default function Patients() {
                                     {paginatedPatients.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={9}
+                                                colSpan={8}
                                                 className="px-5 py-12 text-center text-sm text-gray-500"
                                             >
                                                 No patients match the criteria
                                             </td>
                                         </tr>
                                     ) : (
-                                        paginatedPatients.map((patient, index) => {
+                                        paginatedPatients.map((patient) => {
                                             const doctor = getDoctorMeta(patient);
                                             const insured = patient.insurance.isActive;
-                                            const patientIndex = pageStartIndex + index;
+                                            const isSelected = selected?.id === patient.id && isDetailsOpen;
 
                                             return (
                                                 <tr
                                                     key={patient.id}
                                                     onClick={() => openDetails(patient)}
-                                                className="cursor-pointer border-b border-gray-100 transition hover:bg-gray-50/80 active:bg-gray-100"
+                                                    className={`cursor-pointer border-b border-gray-100 transition active:bg-gray-100 ${isSelected
+                                                        ? "bg-[#0b1f4d] text-white hover:bg-[#0b1f4d]"
+                                                        : "hover:bg-gray-50/80"
+                                                        }`}
                                                 >
-                                                    <td className="px-5 py-3">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        />
-                                                    </td>
-                                                    <td className="whitespace-nowrap px-3 py-3 text-gray-900">
+                                                    <td className={`whitespace-nowrap px-3 py-3 ${getSelectedTextClass(isSelected, "text-gray-900")}`}>
                                                         {formatDate(patient.lastVisitAt)}
                                                     </td>
                                                     <td className="px-3 py-3">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-700">
+                                                            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-semibold ${isSelected
+                                                                ? "bg-white text-[#0b1f4d]"
+                                                                : "bg-gray-100 text-gray-700"
+                                                                }`}>
                                                                 {getInitials(patient)}
                                                             </div>
                                                             <div>
-                                                                <p className="font-medium text-gray-950">
+                                                                <p className={`font-medium ${getSelectedTextClass(isSelected, "text-gray-950")}`}>
                                                                     {getFullName(patient)}
                                                                 </p>
-                                                                <p className="text-xs text-gray-500">
+                                                                <p className={`text-xs ${getSelectedTextClass(isSelected, "text-gray-500")}`}>
                                                                     {patient.age} Years - {formatLabel(patient.gender)}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="max-w-42.5 truncate px-3 py-3 text-gray-900">
+                                                    <td className={`max-w-42.5 truncate px-3 py-3 ${getSelectedTextClass(isSelected, "text-gray-900")}`}>
                                                         {getPrimaryCondition(patient)}
                                                     </td>
-                                                    <td className="whitespace-nowrap px-3 py-3 font-medium text-gray-900">
-                                                        {getRoomNumber(patient, patientIndex)}
+                                                    <td className={`whitespace-nowrap px-3 py-3 font-medium ${getSelectedTextClass(isSelected, "text-gray-900")}`}>
+                                                        {getStableRoomNumber(patient)}
                                                     </td>
                                                     <td className="px-3 py-3">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-stone-100 text-xs font-semibold text-stone-700">
+                                                            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-semibold ${isSelected
+                                                                ? "bg-white text-[#0b1f4d]"
+                                                                : "bg-stone-100 text-stone-700"
+                                                                }`}>
                                                                 {doctor.name
                                                                     .split(" ")
                                                                     .slice(-2)
@@ -477,10 +790,10 @@ export default function Patients() {
                                                                     .join("")}
                                                             </div>
                                                             <div>
-                                                                <p className="max-w-37.5 truncate font-medium text-gray-950">
+                                                                <p className={`max-w-37.5 truncate font-medium ${getSelectedTextClass(isSelected, "text-gray-950")}`}>
                                                                     {doctor.name}
                                                                 </p>
-                                                                <p className="text-xs text-gray-500">
+                                                                <p className={`text-xs ${getSelectedTextClass(isSelected, "text-gray-500")}`}>
                                                                     {doctor.specialty}
                                                                 </p>
                                                             </div>
@@ -497,13 +810,9 @@ export default function Patients() {
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-3">
-                                                        <span
-                                                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClass(patient.status)}`}
-                                                        >
-                                                            {formatLabel(patient.status)}
-                                                        </span>
+                                                        <StatusBadge status={patient.status} isSelected={isSelected} />
                                                     </td>
-                                                    <td className="px-5 py-3 text-right text-xl leading-none text-gray-400">
+                                                    <td className={`px-5 py-3 text-right text-xl leading-none ${getSelectedTextClass(isSelected, "text-gray-400")}`}>
                                                         <MoreVertical className="ml-auto h-4 w-4" />
                                                     </td>
                                                 </tr>
@@ -515,13 +824,7 @@ export default function Patients() {
                         </div>
 
                         <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-                            <p>
-                                Showing {filtered.length === 0 ? 0 : pageStartIndex + 1}-
-                                {Math.min(pageStartIndex + paginatedPatients.length, filtered.length)} of{" "}
-                                {filtered.length} patients
-                            </p>
-
-                            <div className="flex items-center gap-2">
+                            <div className="ml-auto flex items-center gap-2">
                                 <button
                                     onClick={() =>
                                         setCurrentPage((page) => Math.max(1, page - 1))
@@ -550,6 +853,7 @@ export default function Patients() {
 
                 {selected && (
                     <div
+                        ref={detailsRef}
                         className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
                             ? "translate-x-0 opacity-100"
                             : "translate-x-full opacity-0"

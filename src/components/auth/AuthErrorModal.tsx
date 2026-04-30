@@ -16,8 +16,12 @@ export default function AuthErrorModal({ error, onClose }: Props) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="auth-error-title"
+            onClick={onClose}
         >
-            <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-2xl">
+            <div
+                className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+            >
                 <div className="mb-5 flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <span

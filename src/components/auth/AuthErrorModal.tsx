@@ -1,5 +1,6 @@
-import { AlertTriangle, Info, X } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import type { AuthErrorDetails } from "../../services/auth-service";
+import CloseButton from "../ui/CloseButton";
 
 type Props = {
     error: AuthErrorDetails;
@@ -44,14 +45,10 @@ export default function AuthErrorModal({ error, onClose }: Props) {
                         </div>
                     </div>
 
-                    <button
-                        type="button"
+                    <CloseButton
                         onClick={onClose}
-                        className="grid h-9 w-9 cursor-pointer place-items-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 active:scale-[0.95]"
-                        aria-label="Close authentication error dialog"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
+                        label="Close authentication error dialog"
+                    />
                 </div>
 
                 <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">

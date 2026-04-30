@@ -110,7 +110,7 @@ export default function Header() {
                                     <Link
                                         to="/dashboard"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="flex items-center gap-3 border-t border-slate-800 px-4 py-4 text-sm font-medium text-slate-100 transition hover:bg-slate-800 active:translate-y-px"
+                                        className="flex items-center gap-3 border-t border-slate-800 px-4 py-4 text-sm font-medium text-slate-100 transition hover:bg-white hover:text-[#0b1f4d] active:translate-y-px"
                                     >
                                         <LayoutDashboard className="h-5 w-5" />
                                         Dashboard
@@ -119,7 +119,7 @@ export default function Header() {
                                     <button
                                         type="button"
                                         onClick={handleLogout}
-                                        className="flex w-full cursor-pointer items-center gap-3 border-t border-slate-800 px-4 py-4 text-left text-sm font-medium text-red-400 transition hover:bg-slate-800 hover:text-red-300 active:translate-y-px"
+                                        className="flex w-full cursor-pointer items-center gap-3 border-t border-slate-800 px-4 py-4 text-left text-sm font-medium text-slate-100 transition hover:bg-red-600 hover:text-white active:translate-y-px"
                                     >
                                         <LogOut className="h-5 w-5" />
                                         Logout

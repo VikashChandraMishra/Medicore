@@ -1,6 +1,7 @@
-import { Check, LayoutGrid, List, MoreVertical, Plus, Search, X } from "lucide-react";
+import { Check, LayoutGrid, List, MoreVertical, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
+import CloseButton from "../components/ui/CloseButton";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
@@ -554,17 +555,18 @@ export default function Patients() {
                             : "translate-x-full opacity-0"
                             }`}
                     >
-                        <button
-                            onClick={closeDetails}
-                            className="mb-4 cursor-pointer text-sm text-gray-500 transition hover:text-gray-800 active:scale-[0.98]"
-                        >
-                            Close
-                        </button>
-
-                        <h2 className="text-xl font-semibold">{getFullName(selected)}</h2>
-                        <p className="text-gray-500">
-                            {selected.chronicConditions.join(", ") || "No chronic conditions"}
-                        </p>
+                        <div className="mb-4 flex items-start justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-semibold">{getFullName(selected)}</h2>
+                                <p className="text-gray-500">
+                                    {selected.chronicConditions.join(", ") || "No chronic conditions"}
+                                </p>
+                            </div>
+                            <CloseButton
+                                onClick={closeDetails}
+                                label="Close patient details"
+                            />
+                        </div>
 
                         <div className="mt-4 space-y-2 text-sm">
                             <p>Age: {selected.age}</p>
@@ -702,7 +704,7 @@ export default function Patients() {
 
                 {selectedVisit && (
                     <div
-                        className="absolute inset-0 z-40 flex items-center justify-center bg-gray-950/35 px-4"
+                        className="absolute inset-0 z-40 flex items-center justify-center px-4"
                         onClick={() => setSelectedVisit(null)}
                     >
                         <div
@@ -721,13 +723,10 @@ export default function Patients() {
                                         {getDoctorName(selectedVisit.doctorId)}
                                     </p>
                                 </div>
-                                <button
+                                <CloseButton
                                     onClick={() => setSelectedVisit(null)}
-                                    className="grid h-9 w-9 cursor-pointer place-items-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 active:scale-[0.95]"
-                                    aria-label="Close visit details"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
+                                    label="Close visit details"
+                                />
                             </div>
 
                             <div className="space-y-4 text-sm">

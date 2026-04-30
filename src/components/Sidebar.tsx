@@ -1,5 +1,5 @@
-import { X } from "lucide-react";
 import { NavLink } from "react-router";
+import CloseButton from "./ui/CloseButton";
 
 type Props = {
     isOpen: boolean;
@@ -30,13 +30,11 @@ export default function Sidebar({ isOpen, onClose }: Props) {
                         Workspace
                     </p>
                 </div>
-                <button
+                <CloseButton
                     onClick={onClose}
-                    className="grid h-8 w-8 cursor-pointer place-items-center rounded-md text-gray-500 transition hover:bg-white hover:text-gray-800 active:scale-[0.95]"
-                    aria-label="Close sidebar"
-                >
-                    <X className="h-4 w-4" />
-                </button>
+                    label="Close sidebar"
+                    className="h-8 w-8 hover:bg-white hover:text-gray-800"
+                />
             </div>
 
             <nav className="flex flex-col gap-1 text-sm">

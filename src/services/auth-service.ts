@@ -1,13 +1,10 @@
 import {
-    GoogleAuthProvider,
     browserLocalPersistence,
     setPersistence,
-    signInWithPopup,
+    signInWithEmailAndPassword,
     signOut,
 } from "firebase/auth";
 import { auth } from "../config/firebase-config";
-
-const googleProvider = new GoogleAuthProvider();
 
 export type AuthErrorDetails = {
     title: string;
@@ -20,9 +17,9 @@ const ensureSessionPersistence = async () => {
     await setPersistence(auth, browserLocalPersistence);
 };
 
-const loginWithGoogle = async () => {
+const loginWithEmail = async (email: string, password: string) => {
     await ensureSessionPersistence();
-    return signInWithPopup(auth, googleProvider);
+    return signInWithEmailAndPassword(auth, email, password);
 };
 
 const logout = async () => {
@@ -42,6 +39,33 @@ const getAuthErrorMessage = (error: unknown) => {
 const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
     const code = getAuthErrorCode(error);
 
+    if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
+        return {
+            title: "Login details do not match",
+            message: "The email or password you entered is incorrect. Check your details and try again.",
+            actionLabel: "Try again",
+            variant: "warning",
+        };
+    }
+
+    if (code === "auth/user-not-found") {
+        return {
+            title: "Account not found",
+            message: "No MediCore account exists for this email. Check the email and try again.",
+            actionLabel: "Got it",
+            variant: "warning",
+        };
+    }
+
+    if (code === "auth/invalid-email") {
+        return {
+            title: "Invalid email address",
+            message: "The email address format is not valid. Check it and try again.",
+            actionLabel: "Edit email",
+            variant: "warning",
+        };
+    }
+
     if (code === "auth/user-disabled") {
         return {
             title: "Account disabled",
@@ -57,42 +81,6 @@ const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
             message: "This sign-in method is not enabled for the project. Contact the administrator.",
             actionLabel: "Close",
             variant: "error",
-        };
-    }
-
-    if (code === "auth/popup-closed-by-user") {
-        return {
-            title: "Google sign-in was closed",
-            message: "The sign-in window was closed before Google could finish authenticating you.",
-            actionLabel: "Try again",
-            variant: "warning",
-        };
-    }
-
-    if (code === "auth/popup-blocked") {
-        return {
-            title: "Popup blocked",
-            message: "Your browser blocked the Google sign-in window. Allow popups for this site and try again.",
-            actionLabel: "Close",
-            variant: "warning",
-        };
-    }
-
-    if (code === "auth/cancelled-popup-request") {
-        return {
-            title: "Sign-in already in progress",
-            message: "Another Google sign-in request is already open. Finish or close it before trying again.",
-            actionLabel: "Close",
-            variant: "warning",
-        };
-    }
-
-    if (code === "auth/account-exists-with-different-credential") {
-        return {
-            title: "Use your original sign-in method",
-            message: "This email is linked to another sign-in method. Log in using the original provider.",
-            actionLabel: "Close",
-            variant: "warning",
         };
     }
 
@@ -132,7 +120,7 @@ const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
 };
 
 export const authService = {
-    loginWithGoogle,
+    loginWithEmail,
     logout,
     getAuthErrorCode,
     getAuthErrorDetails,

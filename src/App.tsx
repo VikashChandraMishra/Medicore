@@ -6,8 +6,22 @@ function App() {
 
   return (
     <>
-      <Toaster position="top-right" richColors />
-      <RouterProvider router={router} />;
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          classNames: {
+            toast: "rounded-md border border-gray-200 bg-white text-gray-800 shadow-lg",
+            title: "text-sm font-semibold text-gray-950",
+            description: "text-sm text-gray-500",
+            success: "border-l-4 border-l-emerald-600",
+            error: "border-l-4 border-l-red-600",
+            info: "border-l-4 border-l-[#0b1f4d]",
+            loading: "border-l-4 border-l-[#0b1f4d]",
+            closeButton: "border-gray-200 bg-white text-gray-500 hover:text-gray-950",
+          },
+        }}
+      />
+      <RouterProvider router={router} />
     </>
   );
 }

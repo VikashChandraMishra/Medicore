@@ -351,7 +351,7 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-full bg-gray-50 pb-8 text-gray-800">
+        <div className="min-h-full bg-gray-50 text-gray-800">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#0b1f4d]/8 px-3 py-1 text-sm font-medium text-[#0b1f4d]">

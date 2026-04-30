@@ -35,6 +35,7 @@ const CHART_COLORS = ["#0b1f4d", "#0f766e", "#dc2626", "#7c3aed", "#ca8a04"];
 type DateRange = "30d" | "90d" | "180d" | "all";
 type VisitFilter = "all" | typeof VISIT_TYPES[keyof typeof VISIT_TYPES];
 type StatusFilter = "all" | typeof PATIENT_STATUS[keyof typeof PATIENT_STATUS];
+type AnalyticsTab = "charts" | "insurance" | "risk";
 
 type VisitRecord = {
     patient: Patient;
@@ -178,10 +179,23 @@ function getStatusTone(status: Patient["status"]): BadgeTone {
     return "green";
 }
 
+function hasValues<T>(items: T[], getValue: (item: T) => number) {
+    return items.some((item) => getValue(item) > 0);
+}
+
+function EmptyChart({ message }: { message: string }) {
+    return (
+        <div className="grid h-full place-items-center rounded-lg bg-gray-50 p-6 text-center text-sm text-gray-500">
+            {message}
+        </div>
+    );
+}
+
 export default function Analytics() {
     const [dateRange, setDateRange] = useState<DateRange>("90d");
     const [visitType, setVisitType] = useState<VisitFilter>("all");
     const [status, setStatus] = useState<StatusFilter>("all");
+    const [activeTab, setActiveTab] = useState<AnalyticsTab>("charts");
 
     const latestActivityDate = getLatestActivityDate();
     const rangeStart = getRangeStart(dateRange, latestActivityDate);
@@ -256,6 +270,11 @@ export default function Analytics() {
         }))
         .filter((entry) => entry.score > 0)
         .sort((a, b) => b.score - a.score);
+    const hasTimelineData = hasValues(timelineData, (item) => item.visits + item.patients);
+    const hasVisitTypeData = hasValues(visitTypeData, (item) => item.value);
+    const hasConditionData = hasValues(conditionData, (item) => item.count);
+    const hasAgeData = hasValues(ageData, (item) => item.patients);
+    const hasGenderData = hasValues(genderData, (item) => item.value);
 
     const dateOptions = [
         { label: "Last 30 days", value: "30d" },
@@ -277,6 +296,17 @@ export default function Analytics() {
             value: patientStatus,
         })),
     ];
+    const analyticsTabs: Array<{ label: string; value: AnalyticsTab }> = [
+        { label: "Clinical Charts", value: "charts" },
+        { label: "Insurance Insights", value: "insurance" },
+        { label: "Risk Analysis", value: "risk" },
+    ];
+    const summaryMetrics = [
+        { label: "Patients", value: filteredPatients.length, icon: Users },
+        { label: "Visits", value: filteredVisits.length, icon: CalendarDays },
+        { label: "High-risk", value: riskPatients.length, icon: HeartPulse },
+        { label: "Policies Expiring Soon", value: expiringSoon.length, icon: ShieldCheck },
+    ];
 
     return (
         <div className="min-h-full bg-gray-50 text-gray-800">
@@ -294,20 +324,23 @@ export default function Analytics() {
                     </p>
                 </div>
 
-                <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-3">
                     <Select
+                        className="[&_button]:h-9 [&_button]:rounded-lg"
                         value={dateRange}
                         options={dateOptions}
                         onValueChange={(value) => setDateRange(value as DateRange)}
                         ariaLabel="Filter analytics by date range"
                     />
                     <Select
+                        className="[&_button]:h-9 [&_button]:rounded-lg"
                         value={visitType}
                         options={visitOptions}
                         onValueChange={(value) => setVisitType(value as VisitFilter)}
                         ariaLabel="Filter analytics by visit type"
                     />
                     <Select
+                        className="[&_button]:h-9 [&_button]:rounded-lg"
                         value={status}
                         options={statusOptions}
                         onValueChange={(value) => setStatus(value as StatusFilter)}
@@ -316,30 +349,48 @@ export default function Analytics() {
                 </div>
             </div>
 
-            <section className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600">
-                <span className="inline-flex items-center gap-2">
-                    <Users className="h-4 w-4 text-[#0b1f4d]" />
-                    {filteredPatients.length} patients
-                </span>
-                <span className="h-4 w-px bg-gray-200" />
-                <span className="inline-flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-teal-700" />
-                    {filteredVisits.length} visits
-                </span>
-                <span className="h-4 w-px bg-gray-200" />
-                <span className="inline-flex items-center gap-2">
-                    <HeartPulse className="h-4 w-4 text-red-700" />
-                    {riskPatients.length} high-risk
-                </span>
-                <span className="h-4 w-px bg-gray-200" />
-                <span className="inline-flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-sky-700" />
-                    {expiringSoon.length} policies expiring soon
-                </span>
+            <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {summaryMetrics.map((metric) => {
+                    const Icon = metric.icon;
+
+                    return (
+                        <div key={metric.label} className="rounded-xl bg-white p-3 ring-1 ring-gray-200">
+                            <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                <Icon className="h-3.5 w-3.5" />
+                                {metric.label}
+                            </p>
+                            <p className="font-medium text-gray-800">{metric.value}</p>
+                        </div>
+                    );
+                })}
             </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-2">
-                <div className="rounded-lg border border-gray-200 bg-white">
+            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <div className="flex gap-1 overflow-x-auto border-b border-gray-100 p-2" role="tablist" aria-label="Analytics sections">
+                    {analyticsTabs.map((tab) => {
+                        const isActive = activeTab === tab.value;
+
+                        return (
+                            <button
+                                key={tab.value}
+                                type="button"
+                                role="tab"
+                                aria-selected={isActive}
+                                onClick={() => setActiveTab(tab.value)}
+                                className={`shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition active:scale-[0.98] ${isActive
+                                    ? "bg-[#0b1f4d] text-white"
+                                    : "text-gray-600 hover:bg-gray-50 hover:text-[#0b1f4d]"
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {activeTab === "charts" && (
+                    <div className="grid gap-6 p-5 xl:grid-cols-2">
+                        <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Time-Based Trends
@@ -347,7 +398,8 @@ export default function Analytics() {
                         <p className="text-sm text-gray-500">Visits and new patients over time</p>
                     </div>
                     <div className="h-80 p-5">
-                        <ResponsiveContainer width="100%" height="100%">
+                        {hasTimelineData ? (
+                            <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={timelineData} margin={{ left: -18, right: 8, top: 8 }}>
                                 <defs>
                                     <linearGradient id="analyticsVisits" x1="0" x2="0" y1="0" y2="1">
@@ -388,7 +440,10 @@ export default function Analytics() {
                                     fill="url(#analyticsPatients)"
                                 />
                             </AreaChart>
-                        </ResponsiveContainer>
+                            </ResponsiveContainer>
+                        ) : (
+                            <EmptyChart message="No visit or patient trend data matches the selected filters." />
+                        )}
                     </div>
                 </div>
 
@@ -400,7 +455,9 @@ export default function Analytics() {
                         <p className="text-sm text-gray-500">Routine, follow-up, emergency, consultation</p>
                     </div>
                     <div className="grid gap-4 p-5 lg:grid-cols-[0.9fr_1.1fr]">
-                        <div className="h-72">
+                        {hasVisitTypeData ? (
+                            <>
+                                <div className="h-72">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
@@ -421,8 +478,8 @@ export default function Analytics() {
                                     <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
                                 </PieChart>
                             </ResponsiveContainer>
-                        </div>
-                        <div className="space-y-3 self-center">
+                                </div>
+                                <div className="space-y-3 self-center">
                             {visitTypeData.map((entry, index) => (
                                 <div key={entry.name} className="flex items-center justify-between gap-3">
                                     <span className="inline-flex items-center gap-2 text-sm text-gray-600">
@@ -435,12 +492,16 @@ export default function Analytics() {
                                     <span className="font-semibold text-gray-950">{entry.value}</span>
                                 </div>
                             ))}
-                        </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="lg:col-span-2 h-72">
+                                <EmptyChart message="No visit type data matches the selected filters." />
+                            </div>
+                        )}
                     </div>
                 </div>
-            </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-2">
                 <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
@@ -449,7 +510,8 @@ export default function Analytics() {
                         <p className="text-sm text-gray-500">Most common chronic conditions</p>
                     </div>
                     <div className="h-86 p-5">
-                        <ResponsiveContainer width="100%" height="100%">
+                        {hasConditionData ? (
+                            <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={conditionData} layout="vertical" margin={{ left: 8, right: 20 }}>
                                 <CartesianGrid stroke="#eef2f7" horizontal={false} />
                                 <XAxis
@@ -470,7 +532,10 @@ export default function Analytics() {
                                 <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
                                 <Bar dataKey="count" fill="#0b1f4d" radius={[0, 6, 6, 0]} barSize={18} />
                             </BarChart>
-                        </ResponsiveContainer>
+                            </ResponsiveContainer>
+                        ) : (
+                            <EmptyChart message="No chronic condition data matches the selected filters." />
+                        )}
                     </div>
                 </div>
 
@@ -480,7 +545,9 @@ export default function Analytics() {
                         <p className="text-sm text-gray-500">Age buckets and gender split</p>
                     </div>
                     <div className="grid gap-4 p-5 lg:grid-cols-2">
-                        <div className="h-72">
+                        {hasAgeData || hasGenderData ? (
+                            <>
+                                <div className="h-72">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={ageData} margin={{ left: -18, right: 8, top: 8 }}>
                                     <CartesianGrid stroke="#eef2f7" vertical={false} />
@@ -500,28 +567,56 @@ export default function Analytics() {
                                     <Bar dataKey="patients" fill="#0f766e" radius={[6, 6, 0, 0]} barSize={30} />
                                 </BarChart>
                             </ResponsiveContainer>
-                        </div>
-                        <div className="h-72">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={genderData} dataKey="value" nameKey="name" outerRadius={86}>
-                                        {genderData.map((entry, index) => (
-                                            <Cell
-                                                key={entry.name}
-                                                fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                </div>
+                                <div>
+                            <div className="h-56">
+                                {hasGenderData ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={genderData} dataKey="value" nameKey="name" outerRadius={82}>
+                                            {genderData.map((entry, index) => (
+                                                <Cell
+                                                    key={entry.name}
+                                                    fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                                />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+                                    </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <EmptyChart message="No gender data matches the selected filters." />
+                                )}
+                            </div>
+                            <div className="mt-3 grid gap-2 text-sm">
+                                {genderData.map((entry, index) => (
+                                    <div key={entry.name} className="flex items-center justify-between gap-3">
+                                        <span className="inline-flex items-center gap-2 text-gray-600">
+                                            <span
+                                                className="h-2.5 w-2.5 rounded-full"
+                                                style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                                             />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                                            {entry.name}
+                                        </span>
+                                        <span className="font-semibold text-gray-950">{entry.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="lg:col-span-2 h-72">
+                                <EmptyChart message="No demographic data matches the selected filters." />
+                            </div>
+                        )}
                     </div>
                 </div>
-            </section>
+                    </div>
+                )}
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                <div className="rounded-lg border border-gray-200 bg-white">
+                {activeTab === "insurance" && (
+                    <div className="p-5">
+                        <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
@@ -533,15 +628,21 @@ export default function Analytics() {
                     </div>
                     <div className="p-5">
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-lg bg-emerald-50 p-4">
-                                <p className="text-sm text-emerald-700">Active Policies</p>
-                                <p className="mt-1 text-3xl font-semibold text-emerald-950">
+                            <div className="rounded-xl bg-gray-50 p-3">
+                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                    <ShieldCheck className="h-3.5 w-3.5 text-[#0b1f4d]" />
+                                    Active Policies
+                                </p>
+                                <p className="font-medium text-gray-800">
                                     {activePolicies}
                                 </p>
                             </div>
-                            <div className="rounded-lg bg-amber-50 p-4">
-                                <p className="text-sm text-amber-700">Inactive Policies</p>
-                                <p className="mt-1 text-3xl font-semibold text-amber-950">
+                            <div className="rounded-xl bg-gray-50 p-3">
+                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                    <PieChartIcon className="h-3.5 w-3.5 text-gray-500" />
+                                    Inactive Policies
+                                </p>
+                                <p className="font-medium text-gray-800">
                                     {inactivePolicies}
                                 </p>
                             </div>
@@ -575,8 +676,12 @@ export default function Analytics() {
                         </div>
                     </div>
                 </div>
+                    </div>
+                )}
 
-                <div className="rounded-lg border border-gray-200 bg-white">
+                {activeTab === "risk" && (
+                    <div className="p-5">
+                        <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
@@ -589,39 +694,47 @@ export default function Analytics() {
                         <AlertTriangle className="h-5 w-5 text-red-700" />
                     </div>
                     <div className="max-h-110 overflow-y-auto">
-                        {riskPatients.map((entry) => (
-                            <div
-                                key={entry.patient.id}
-                                className="grid gap-3 border-b border-gray-100 px-5 py-4 md:grid-cols-[1fr_auto]"
-                            >
-                                <div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <p className="font-semibold text-gray-950">
-                                            {getFullName(entry.patient)}
+                        {riskPatients.length === 0 ? (
+                            <p className="m-5 rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
+                                No risk signals match the selected filters.
+                            </p>
+                        ) : (
+                            riskPatients.map((entry) => (
+                                <div
+                                    key={entry.patient.id}
+                                    className="grid gap-3 border-b border-gray-100 px-5 py-4 md:grid-cols-[1fr_auto]"
+                                >
+                                    <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="font-semibold text-gray-950">
+                                                {getFullName(entry.patient)}
+                                            </p>
+                                            <Badge tone={getStatusTone(entry.patient.status)}>
+                                                {formatLabel(entry.patient.status)}
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-1 text-sm text-gray-500">
+                                            {entry.patient.chronicConditions.join(", ") || "General care"}
                                         </p>
-                                        <Badge tone={getStatusTone(entry.patient.status)}>
-                                            {formatLabel(entry.patient.status)}
-                                        </Badge>
                                     </div>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        {entry.patient.chronicConditions.join(", ") || "General care"}
-                                    </p>
+                                    <div className="text-sm md:text-right">
+                                        <p className="font-semibold text-red-700">
+                                            Risk score {entry.score}
+                                        </p>
+                                        <p className="mt-1 text-gray-500">
+                                            {entry.emergencyVisits} ER visit
+                                            {entry.emergencyVisits === 1 ? "" : "s"} ·{" "}
+                                            {entry.warningNotes} warning
+                                            {entry.warningNotes === 1 ? "" : "s"}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2 text-sm">
-                                    <span className="rounded-md bg-red-50 px-3 py-2 font-medium text-red-700">
-                                        Risk {entry.score}
-                                    </span>
-                                    <span className="rounded-md bg-gray-100 px-3 py-2 text-gray-600">
-                                        ER {entry.emergencyVisits}
-                                    </span>
-                                    <span className="rounded-md bg-amber-50 px-3 py-2 text-amber-700">
-                                        Warn {entry.warningNotes}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
+                    </div>
+                )}
             </section>
 
             <div className="mt-6 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">

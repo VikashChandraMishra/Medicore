@@ -385,7 +385,7 @@ export default function Patients() {
     const recordSummary = `Showing ${visibleStart} to ${visibleEnd} of ${sortedPatients.length} patients`;
 
     return (
-        <div className="relative min-h-full bg-gray-50 pb-8">
+        <div className="relative min-h-full bg-gray-50">
             <div className="max-w-7xl mx-auto">
                 <div className="my-2">
                     <h1 className="text-2xl font-semibold text-gray-950">Patients</h1>

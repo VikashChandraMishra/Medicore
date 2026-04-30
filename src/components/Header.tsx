@@ -1,6 +1,7 @@
 import { LayoutDashboard, LogOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
 import { authService } from "../services/auth-service";
 import { notify } from "../utils/toast";
@@ -25,6 +26,7 @@ export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const displayName = getDisplayName(user?.email, user?.displayName);
     const initials = getInitials(displayName);
+    const isAdmin = isAdminEmail(user?.email);
 
     useEffect(() => {
         const handlePointerDown = (event: MouseEvent) => {
@@ -67,7 +69,7 @@ export default function Header() {
                     <img
                         src="/logo.png"
                         alt="Medicore Logo"
-                        className="w-8 h-8 object-contain"
+                        className="h-[2.3rem] w-[2.3rem] object-contain"
                     />
                     <h2 className="text-xl font-semibold">Medicore</h2>
                 </div>
@@ -77,9 +79,11 @@ export default function Header() {
                     <Link to="#" className="cursor-pointer text-gray-700 transition-colors hover:text-[#0b1f4d] active:translate-y-px">
                         Features
                     </Link>
-                    <Link to="#" className="cursor-pointer text-gray-700 transition-colors hover:text-[#0b1f4d] active:translate-y-px">
-                        Analytics
-                    </Link>
+                    {isAdmin && (
+                        <Link to="/analytics" className="cursor-pointer text-gray-700 transition-colors hover:text-[#0b1f4d] active:translate-y-px">
+                            Analytics
+                        </Link>
+                    )}
                     <Link to="/patients" className="cursor-pointer text-gray-700 transition-colors hover:text-[#0b1f4d] active:translate-y-px">
                         Patients
                     </Link>

@@ -1,4 +1,6 @@
 import { NavLink } from "react-router";
+import { isAdminEmail } from "../data/users";
+import useAuth from "../hooks/use-auth";
 import CloseButton from "./ui/CloseButton";
 
 type Props = {
@@ -7,6 +9,8 @@ type Props = {
 };
 
 export default function Sidebar({ isOpen, onClose }: Props) {
+    const { user } = useAuth();
+    const isAdmin = isAdminEmail(user?.email);
     const navLinkClass = ({ isActive }: { isActive: boolean }) =>
         [
             "cursor-pointer rounded-md px-3 py-2 font-medium transition-colors active:scale-[0.98]",
@@ -44,9 +48,11 @@ export default function Sidebar({ isOpen, onClose }: Props) {
                 <NavLink to="/patients" className={navLinkClass}>
                     Patients
                 </NavLink>
-                <NavLink to="/analytics" className={navLinkClass}>
-                    Analytics
-                </NavLink>
+                {isAdmin && (
+                    <NavLink to="/analytics" className={navLinkClass}>
+                        Analytics
+                    </NavLink>
+                )}
             </nav>
         </aside>
     );

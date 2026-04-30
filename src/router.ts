@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import AppLayout from "./AppLayout";
+import AdminRoute from "./components/auth/AdminRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Analytics from "./pages/Analytics";
 import Dashboard from "./pages/Dashboard";
@@ -32,8 +33,13 @@ export const router = createBrowserRouter([
                         Component: Patients,
                     },
                     {
-                        path: "analytics",
-                        Component: Analytics,
+                        Component: AdminRoute,
+                        children: [
+                            {
+                                path: "analytics",
+                                Component: Analytics,
+                            },
+                        ],
                     },
                 ],
             },

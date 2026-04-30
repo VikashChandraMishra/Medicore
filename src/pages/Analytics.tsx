@@ -315,35 +315,26 @@ export default function Analytics() {
                 </div>
             </div>
 
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                    <Users className="mb-4 h-5 w-5 text-[#0b1f4d]" />
-                    <p className="text-sm text-gray-500">Patients in View</p>
-                    <p className="mt-1 text-3xl font-semibold text-gray-950">
-                        {filteredPatients.length}
-                    </p>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                    <CalendarDays className="mb-4 h-5 w-5 text-teal-700" />
-                    <p className="text-sm text-gray-500">Visits in View</p>
-                    <p className="mt-1 text-3xl font-semibold text-gray-950">
-                        {filteredVisits.length}
-                    </p>
-                </div>
-                <div className="rounded-lg border border-red-100 bg-red-50 p-5 shadow-sm">
-                    <HeartPulse className="mb-4 h-5 w-5 text-red-700" />
-                    <p className="text-sm text-red-600">High-Risk Patients</p>
-                    <p className="mt-1 text-3xl font-semibold text-red-900">
-                        {riskPatients.length}
-                    </p>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                    <ShieldCheck className="mb-4 h-5 w-5 text-sky-700" />
-                    <p className="text-sm text-gray-500">Policies Expiring Soon</p>
-                    <p className="mt-1 text-3xl font-semibold text-gray-950">
-                        {expiringSoon.length}
-                    </p>
-                </div>
+            <section className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm">
+                <span className="inline-flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[#0b1f4d]" />
+                    {filteredPatients.length} patients
+                </span>
+                <span className="h-4 w-px bg-gray-200" />
+                <span className="inline-flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-teal-700" />
+                    {filteredVisits.length} visits
+                </span>
+                <span className="h-4 w-px bg-gray-200" />
+                <span className="inline-flex items-center gap-2">
+                    <HeartPulse className="h-4 w-4 text-red-700" />
+                    {riskPatients.length} high-risk
+                </span>
+                <span className="h-4 w-px bg-gray-200" />
+                <span className="inline-flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-sky-700" />
+                    {expiringSoon.length} policies expiring soon
+                </span>
             </section>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-2">

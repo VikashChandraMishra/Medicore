@@ -19,6 +19,5 @@ export default function useAuth() {
     return {
         user,
         loading,
-        isVerified: Boolean(user?.emailVerified),
     };
 }

@@ -1,10 +1,7 @@
 import {
     GoogleAuthProvider,
     browserLocalPersistence,
-    createUserWithEmailAndPassword,
-    sendEmailVerification,
     setPersistence,
-    signInWithEmailAndPassword,
     signInWithPopup,
     signOut,
 } from "firebase/auth";
@@ -23,43 +20,9 @@ const ensureSessionPersistence = async () => {
     await setPersistence(auth, browserLocalPersistence);
 };
 
-const loginWithEmail = async (email: string, password: string) => {
-    await ensureSessionPersistence();
-    return signInWithEmailAndPassword(auth, email, password);
-};
-
 const loginWithGoogle = async () => {
     await ensureSessionPersistence();
     return signInWithPopup(auth, googleProvider);
-};
-
-const signUpWithEmail = async (email: string, password: string) => {
-    await ensureSessionPersistence();
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
-
-    await sendEmailVerification(credential.user);
-
-    return credential;
-};
-
-const resendVerificationEmail = async () => {
-    if (!auth.currentUser) {
-        throw Object.assign(new Error("No authenticated user found."), {
-            code: "auth/no-current-user",
-        });
-    }
-
-    await sendEmailVerification(auth.currentUser);
-};
-
-const refreshCurrentUser = async () => {
-    if (!auth.currentUser) {
-        return null;
-    }
-
-    await auth.currentUser.reload();
-
-    return auth.currentUser;
 };
 
 const logout = async () => {
@@ -78,51 +41,6 @@ const getAuthErrorMessage = (error: unknown) => {
 
 const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
     const code = getAuthErrorCode(error);
-
-    if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
-        return {
-            title: "Login details do not match",
-            message: "The email or password you entered is incorrect. Check your details and try again.",
-            actionLabel: "Try again",
-            variant: "warning",
-        };
-    }
-
-    if (code === "auth/user-not-found") {
-        return {
-            title: "Account not found",
-            message: "No MediCore account exists for this email. Create an account or try another email.",
-            actionLabel: "Got it",
-            variant: "warning",
-        };
-    }
-
-    if (code === "auth/email-already-in-use") {
-        return {
-            title: "Account already exists",
-            message: "A MediCore account already exists for this email. Use login to continue.",
-            actionLabel: "Got it",
-            variant: "warning",
-        };
-    }
-
-    if (code === "auth/weak-password") {
-        return {
-            title: "Password is too weak",
-            message: "Use a password with at least 6 characters before creating the account.",
-            actionLabel: "Update password",
-            variant: "warning",
-        };
-    }
-
-    if (code === "auth/invalid-email") {
-        return {
-            title: "Invalid email address",
-            message: "The email address format is not valid. Check it and try again.",
-            actionLabel: "Edit email",
-            variant: "warning",
-        };
-    }
 
     if (code === "auth/user-disabled") {
         return {
@@ -214,11 +132,7 @@ const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
 };
 
 export const authService = {
-    loginWithEmail,
     loginWithGoogle,
-    signUpWithEmail,
-    resendVerificationEmail,
-    refreshCurrentUser,
     logout,
     getAuthErrorCode,
     getAuthErrorDetails,

@@ -26,21 +26,12 @@ export default function Header() {
                         Patients
                     </Link>
 
-                    <div className="flex items-center gap-3">
-                        <Link
-                            to="/auth/login"
-                            className="cursor-pointer rounded-md bg-gray-200 px-4 py-2 text-gray-800 transition hover:bg-gray-300 active:scale-[0.98]"
-                        >
-                            Login
-                        </Link>
-
-                        <Link
-                            to="/auth/signup"
-                            className="cursor-pointer rounded-md bg-[#0b1f4d] px-4 py-2 text-white transition hover:bg-[#102a63] active:scale-[0.98]"
-                        >
-                            Sign Up
-                        </Link>
-                    </div>
+                    <Link
+                        to="/auth/login"
+                        className="cursor-pointer rounded-md bg-[#0b1f4d] px-4 py-2 text-white transition hover:bg-[#102a63] active:scale-[0.98]"
+                    >
+                        Login
+                    </Link>
                 </nav>
             </div>
         </header>

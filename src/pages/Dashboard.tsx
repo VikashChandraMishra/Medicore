@@ -14,8 +14,6 @@ import { Link } from "react-router";
 import {
     Area,
     AreaChart,
-    Bar,
-    BarChart,
     CartesianGrid,
     ResponsiveContainer,
     Tooltip,
@@ -263,10 +261,6 @@ export default function Dashboard() {
                 (b.lastVisitAt?.getTime() ?? 0) - (a.lastVisitAt?.getTime() ?? 0),
         )
         .slice(0, 7);
-    const visitTypeDistribution = Object.values(VISIT_TYPES).map((visitType) => ({
-        label: formatLabel(visitType),
-        visits: allVisits.filter(({ visit }) => visit.type === visitType).length,
-    }));
     const dailyVisitTrend = getDailyVisitTrend(allVisits, operationalNow);
 
     const handleSimulateEmergencyAlert = async () => {
@@ -447,7 +441,7 @@ export default function Dashboard() {
                 </div>
             </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-2">
+            <section className="mt-6">
                 <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
@@ -497,51 +491,6 @@ export default function Dashboard() {
                                     activeDot={{ r: 5, fill: "#0b1f4d" }}
                                 />
                             </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-                    <div className="border-b border-gray-100 px-5 py-4">
-                        <h2 className="text-lg font-semibold text-gray-950">
-                            Visit Type Distribution
-                        </h2>
-                        <p className="text-sm text-gray-500">All recorded encounters</p>
-                    </div>
-                    <div className="h-64 p-5">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={visitTypeDistribution}
-                                margin={{ left: -18, right: 8, top: 8, bottom: 0 }}
-                            >
-                                <CartesianGrid stroke="#eef2f7" vertical={false} />
-                                <XAxis
-                                    dataKey="label"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                                />
-                                <YAxis
-                                    allowDecimals={false}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: "#f8fafc" }}
-                                    contentStyle={{
-                                        border: "1px solid #e5e7eb",
-                                        borderRadius: "8px",
-                                        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-                                    }}
-                                />
-                                <Bar
-                                    dataKey="visits"
-                                    fill="#0b1f4d"
-                                    radius={[6, 6, 0, 0]}
-                                    barSize={34}
-                                />
-                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>

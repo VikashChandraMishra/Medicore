@@ -6,8 +6,6 @@ import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
-import SignUp from "./pages/auth/SignUp";
-import VerifyEmail from "./pages/auth/VerifyEmail";
 
 export const router = createBrowserRouter([
     {
@@ -21,14 +19,6 @@ export const router = createBrowserRouter([
             {
                 path: "auth/login",
                 Component: Login,
-            },
-            {
-                path: "auth/signup",
-                Component: SignUp,
-            },
-            {
-                path: "auth/verify-email",
-                Component: VerifyEmail,
             },
             {
                 Component: ProtectedRoute,

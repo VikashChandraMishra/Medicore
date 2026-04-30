@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router";
 import useAuth from "../../hooks/use-auth";
 
 export default function ProtectedRoute() {
-    const { user, loading, isVerified } = useAuth();
+    const { user, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -16,10 +16,6 @@ export default function ProtectedRoute() {
 
     if (!user) {
         return <Navigate to="/auth/login" state={{ from: location }} replace />;
-    }
-
-    if (!isVerified) {
-        return <Navigate to="/auth/verify-email" replace />;
     }
 
     return <Outlet />;

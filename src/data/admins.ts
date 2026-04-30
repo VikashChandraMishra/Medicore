@@ -8,6 +8,7 @@ export const mockAdmins: User[] = [
         id: "ADM-001",
         displayName: "Aarav Mehta",
         email: "aarav.mehta@medicore.example",
+        password: "MediCore@123",
         role: USER_ROLES.ADMIN,
         status: USER_STATUS.ACTIVE,
         createdAt: date("2023-12-01T09:00:00+05:30"),

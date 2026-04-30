@@ -10,7 +10,8 @@ import {
     UserCheck,
     Users,
 } from "lucide-react";
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import {
     Area,
     AreaChart,
@@ -20,9 +21,14 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
+import UserDirectory from "../components/dashboard/UserDirectory";
+import Badge, { type BadgeTone } from "../components/ui/Badge";
+import DataTable from "../components/ui/DataTable";
 import { NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
 import { mockDoctors } from "../data/doctors";
 import { mockPatients } from "../data/patients";
+import { isAdminEmail } from "../data/users";
+import useAuth from "../hooks/use-auth";
 import { notify } from "../utils/toast";
 import type { Note, Patient, Visit } from "../types/patient";
 
@@ -47,6 +53,8 @@ type CriticalAlert = {
     source: string;
     severity: "critical" | "warning";
 };
+
+type DashboardTab = "alerts" | "visits" | "activity" | "patients" | "users";
 
 function getFullName(patient: Patient) {
     return `${patient.firstName} ${patient.lastName}`;
@@ -112,10 +120,10 @@ function formatRelativeTime(date: Date, now: Date) {
     return `${days}d ago`;
 }
 
-function getStatusClass(status: Patient["status"]) {
-    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-50 text-red-700 ring-red-100";
-    if (status === PATIENT_STATUS.INACTIVE) return "bg-amber-50 text-amber-700 ring-amber-100";
-    return "bg-emerald-50 text-emerald-700 ring-emerald-100";
+function getStatusTone(status: Patient["status"]): BadgeTone {
+    if (status === PATIENT_STATUS.CRITICAL) return "red";
+    if (status === PATIENT_STATUS.INACTIVE) return "amber";
+    return "green";
 }
 
 function getPatientDetailUrl(patient: Patient) {
@@ -225,6 +233,9 @@ function getDailyVisitTrend(visits: { visit: Visit }[], endDate: Date) {
 }
 
 export default function Dashboard() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<DashboardTab>("alerts");
     const operationalNow = getLatestActivityDate();
     const lastSevenDaysStart = new Date(
         operationalNow.getTime() - LAST_SEVEN_DAYS_IN_MS,
@@ -261,7 +272,38 @@ export default function Dashboard() {
                 (b.lastVisitAt?.getTime() ?? 0) - (a.lastVisitAt?.getTime() ?? 0),
         )
         .slice(0, 7);
+    const patientSnapshotTotalPages = 1;
     const dailyVisitTrend = getDailyVisitTrend(allVisits, operationalNow);
+    const showUserDirectory = isAdminEmail(user?.email);
+    const dashboardTabs: Array<{ label: string; value: DashboardTab }> = [
+        { label: "Critical Alerts", value: "alerts" },
+        { label: "Visits in Last 7 Days", value: "visits" },
+        { label: "Recent Activity", value: "activity" },
+        { label: "Patient Snapshot", value: "patients" },
+        ...(showUserDirectory ? [{ label: "Users", value: "users" as DashboardTab }] : []),
+    ];
+    const dashboardMetrics = [
+        {
+            label: "Total Patients",
+            value: mockPatients.length,
+            icon: Users,
+        },
+        {
+            label: "Active vs Inactive",
+            value: `${activePatients} / ${inactivePatients}`,
+            icon: UserCheck,
+        },
+        {
+            label: "Critical Patients",
+            value: criticalPatients,
+            icon: HeartPulse,
+        },
+        {
+            label: "Visits in Last 7 Days",
+            value: recentVisits.length,
+            icon: CalendarClock,
+        },
+    ];
 
     const handleSimulateEmergencyAlert = async () => {
         const criticalPatient =
@@ -309,7 +351,7 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-full bg-gray-50 text-gray-800">
+        <div className="min-h-full bg-gray-50 pb-8 text-gray-800">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#0b1f4d]/8 px-3 py-1 text-sm font-medium text-[#0b1f4d]">
@@ -333,275 +375,209 @@ export default function Dashboard() {
                 </button>
             </div>
 
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-gray-200 bg-white p-5">
-                    <div className="mb-5 flex items-center justify-between">
-                        <span className="rounded-md bg-blue-50 p-2 text-[#0b1f4d]">
-                            <Users className="h-5 w-5" />
-                        </span>
-                        <span className="text-xs font-medium text-gray-400">Registry</span>
-                    </div>
-                    <p className="text-sm text-gray-500">Total Patients</p>
-                    <p className="mt-1 text-3xl font-semibold text-gray-950">
-                        {mockPatients.length}
-                    </p>
-                </div>
+            <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {dashboardMetrics.map((metric) => {
+                    const Icon = metric.icon;
 
-                <div className="rounded-lg border border-gray-200 bg-white p-5">
-                    <div className="mb-5 flex items-center justify-between">
-                        <span className="rounded-md bg-emerald-50 p-2 text-emerald-700">
-                            <UserCheck className="h-5 w-5" />
-                        </span>
-                        <span className="text-xs font-medium text-gray-400">Care state</span>
-                    </div>
-                    <p className="text-sm text-gray-500">Active vs Inactive</p>
-                    <p className="mt-1 text-3xl font-semibold text-gray-950">
-                        {activePatients} / {inactivePatients}
-                    </p>
-                </div>
-
-                <div className="rounded-lg border border-red-100 bg-red-50 p-5">
-                    <div className="mb-5 flex items-center justify-between">
-                        <span className="rounded-md bg-white p-2 text-red-700">
-                            <HeartPulse className="h-5 w-5" />
-                        </span>
-                        <span className="text-xs font-medium text-red-500">High attention</span>
-                    </div>
-                    <p className="text-sm text-red-600">Critical Patients</p>
-                    <p className="mt-1 text-3xl font-semibold text-red-900">
-                        {criticalPatients}
-                    </p>
-                </div>
-
-                <div className="rounded-lg border border-gray-200 bg-white p-5">
-                    <div className="mb-5 flex items-center justify-between">
-                        <span className="rounded-md bg-sky-50 p-2 text-sky-700">
-                            <CalendarClock className="h-5 w-5" />
-                        </span>
-                        <span className="text-xs font-medium text-gray-400">Last 7 days</span>
-                    </div>
-                    <p className="text-sm text-gray-500">Visits in Last 7 Days</p>
-                    <p className="mt-1 text-3xl font-semibold text-gray-950">
-                        {recentVisits.length}
-                    </p>
-                </div>
-            </section>
-
-            <section className="mt-6">
-                <div className="rounded-lg border border-gray-200 bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-950">
-                                Critical Alerts
-                            </h2>
-                            <p className="text-sm text-gray-500">
-                                Critical status, emergency visits, and warning notes
+                    return (
+                        <div key={metric.label} className="rounded-xl bg-white p-3 ring-1 ring-gray-200">
+                            <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                <Icon className="h-3.5 w-3.5" />
+                                {metric.label}
                             </p>
+                            <p className="font-medium text-gray-800">{metric.value}</p>
                         </div>
-                        <AlertTriangle className="h-5 w-5 text-red-600" />
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                        {criticalAlerts.map((alert) => (
-                            <Link
-                                key={alert.id}
-                                to={getPatientDetailUrl(alert.patient)}
-                                className="flex cursor-pointer items-start gap-4 px-5 py-4 transition hover:bg-gray-50 active:bg-gray-100"
-                            >
-                                <span
-                                    className={`mt-1 rounded-md p-2 ${alert.severity === "critical"
-                                        ? "bg-red-50 text-red-700"
-                                        : "bg-amber-50 text-amber-700"
-                                        }`}
-                                >
-                                    {alert.severity === "critical" ? (
-                                        <HeartPulse className="h-4 w-4" />
-                                    ) : (
-                                        <FileWarning className="h-4 w-4" />
-                                    )}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <p className="font-semibold text-gray-950">
-                                            {getFullName(alert.patient)}
-                                        </p>
-                                        <span className="text-xs font-medium text-gray-400">
-                                            {formatDateTime(alert.lastVisitAt)}
-                                        </span>
-                                    </div>
-                                    <p className="mt-1 line-clamp-2 text-sm text-gray-600">
-                                        {alert.issue}
-                                    </p>
-                                    <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-                                        {alert.source}
-                                    </p>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
+                    );
+                })}
             </section>
 
-            <section className="mt-6">
-                <div className="rounded-lg border border-gray-200 bg-white">
-                    <div className="border-b border-gray-100 px-5 py-4">
-                        <h2 className="text-lg font-semibold text-gray-950">
-                            Visits in Last 7 Days
-                        </h2>
-                        <p className="text-sm text-gray-500">Daily encounter volume</p>
-                    </div>
-                    <div className="h-64 p-5">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
-                                data={dailyVisitTrend}
-                                margin={{ left: -18, right: 8, top: 8, bottom: 0 }}
-                            >
-                                <defs>
-                                    <linearGradient id="visitVolume" x1="0" x2="0" y1="0" y2="1">
-                                        <stop offset="5%" stopColor="#0b1f4d" stopOpacity={0.28} />
-                                        <stop offset="95%" stopColor="#0b1f4d" stopOpacity={0.02} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid stroke="#eef2f7" vertical={false} />
-                                <XAxis
-                                    dataKey="date"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                                />
-                                <YAxis
-                                    allowDecimals={false}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                                />
-                                <Tooltip
-                                    cursor={{ stroke: "#0b1f4d", strokeWidth: 1 }}
-                                    contentStyle={{
-                                        border: "1px solid #e5e7eb",
-                                        borderRadius: "8px",
-                                        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-                                    }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="visits"
-                                    stroke="#0b1f4d"
-                                    strokeWidth={3}
-                                    fill="url(#visitVolume)"
-                                    activeDot={{ r: 5, fill: "#0b1f4d" }}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </section>
+            {showUserDirectory && (
+            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <div className="flex gap-1 overflow-x-auto border-b border-gray-100 p-2" role="tablist" aria-label="Dashboard sections">
+                    {dashboardTabs.map((tab) => {
+                        const isActive = activeTab === tab.value;
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-lg border border-gray-200 bg-white">
-                    <div className="border-b border-gray-100 px-5 py-4">
-                        <h2 className="text-lg font-semibold text-gray-950">
-                            Recent Activity
-                        </h2>
-                        <p className="text-sm text-gray-500">
-                            Visits and notes sorted by created time
-                        </p>
-                    </div>
-                    <div className="max-h-136 divide-y divide-gray-100 overflow-y-auto">
-                        {activityFeed.map((item) => (
-                            <div key={item.id} className="flex gap-3 px-5 py-4">
-                                <span
-                                    className={`mt-1 rounded-md p-2 ${item.isUrgent
-                                        ? "bg-red-50 text-red-700"
-                                        : "bg-gray-100 text-gray-600"
-                                        }`}
-                                >
-                                    {item.type === "visit" ? (
-                                        <Stethoscope className="h-4 w-4" />
-                                    ) : (
-                                        <Clock3 className="h-4 w-4" />
-                                    )}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <p className="font-medium text-gray-950">{item.title}</p>
-                                        <span className="shrink-0 text-xs text-gray-400">
-                                            {formatRelativeTime(item.createdAt, operationalNow)}
-                                        </span>
-                                    </div>
-                                    <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-                                        {item.detail}
-                                    </p>
-                                </div>
+                        return (
+                            <button
+                                key={tab.value}
+                                type="button"
+                                role="tab"
+                                aria-selected={isActive}
+                                onClick={() => setActiveTab(tab.value)}
+                                className={`shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition active:scale-[0.98] ${isActive
+                                    ? "bg-[#0b1f4d] text-white"
+                                    : "text-gray-600 hover:bg-gray-50 hover:text-[#0b1f4d]"
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {activeTab === "alerts" && (
+                    <>
+                        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-950">Critical Alerts</h2>
+                                <p className="text-sm text-gray-500">Critical status, emergency visits, and warning notes</p>
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-950">
-                                Patient Snapshot
-                            </h2>
-                            <p className="text-sm text-gray-500">
-                                Recent patients with status and condition count
-                            </p>
+                            <AlertTriangle className="h-5 w-5 text-red-600" />
                         </div>
-                        <Link
-                            to="/patients"
-                            className="cursor-pointer rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]"
-                        >
-                            View all
-                        </Link>
-                    </div>
+                        <div className="divide-y divide-gray-100">
+                            {criticalAlerts.map((alert) => (
+                                <Link
+                                    key={alert.id}
+                                    to={getPatientDetailUrl(alert.patient)}
+                                    className="flex cursor-pointer items-start gap-4 px-5 py-4 transition hover:bg-gray-50 active:bg-gray-100"
+                                >
+                                    <span className={`mt-1 rounded-md p-2 ${alert.severity === "critical" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                                        {alert.severity === "critical" ? <HeartPulse className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <p className="font-semibold text-gray-950">{getFullName(alert.patient)}</p>
+                                            <span className="text-xs font-medium text-gray-400">{formatDateTime(alert.lastVisitAt)}</span>
+                                        </div>
+                                        <p className="mt-1 line-clamp-2 text-sm text-gray-600">{alert.issue}</p>
+                                        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-400">{alert.source}</p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </>
+                )}
 
-                    <div className="max-h-126 overflow-auto">
-                        <table className="w-full min-w-160 text-left text-sm">
-                            <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                                <tr>
+                {activeTab === "visits" && (
+                    <>
+                        <div className="border-b border-gray-100 px-5 py-4">
+                            <h2 className="text-lg font-semibold text-gray-950">Visits in Last 7 Days</h2>
+                            <p className="text-sm text-gray-500">Daily encounter volume</p>
+                        </div>
+                        <div className="h-64 p-5">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={dailyVisitTrend} margin={{ left: -18, right: 8, top: 8, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="visitVolume" x1="0" x2="0" y1="0" y2="1">
+                                            <stop offset="5%" stopColor="#0b1f4d" stopOpacity={0.28} />
+                                            <stop offset="95%" stopColor="#0b1f4d" stopOpacity={0.02} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid stroke="#eef2f7" vertical={false} />
+                                    <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                                    <Tooltip cursor={{ stroke: "#0b1f4d", strokeWidth: 1 }} contentStyle={{ border: "1px solid #e5e7eb", borderRadius: "8px" }} />
+                                    <Area type="monotone" dataKey="visits" stroke="#0b1f4d" strokeWidth={3} fill="url(#visitVolume)" activeDot={{ r: 5, fill: "#0b1f4d" }} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </>
+                )}
+
+                {activeTab === "activity" && (
+                    <>
+                        <div className="border-b border-gray-100 px-5 py-4">
+                            <h2 className="text-lg font-semibold text-gray-950">Recent Activity</h2>
+                            <p className="text-sm text-gray-500">Visits and notes sorted by created time</p>
+                        </div>
+                        <div className="max-h-136 divide-y divide-gray-100 overflow-y-auto">
+                            {activityFeed.map((item) => (
+                                <div key={item.id} className="flex gap-3 px-5 py-4">
+                                    <span className={`mt-1 rounded-md p-2 ${item.isUrgent ? "bg-red-50 text-red-700" : "bg-gray-100 text-gray-600"}`}>
+                                        {item.type === "visit" ? <Stethoscope className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <p className="font-medium text-gray-950">{item.title}</p>
+                                            <span className="shrink-0 text-xs text-gray-400">{formatRelativeTime(item.createdAt, operationalNow)}</span>
+                                        </div>
+                                        <p className="mt-1 line-clamp-2 text-sm text-gray-500">{item.detail}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {activeTab === "patients" && (
+                    <>
+                        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-950">Patient Snapshot</h2>
+                                <p className="text-sm text-gray-500">Recent patients with status and condition count</p>
+                            </div>
+                            <Link to="/patients" className="cursor-pointer rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]">
+                                View all
+                            </Link>
+                        </div>
+                        <DataTable
+                            outerClassName="mx-5 mb-4 overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200"
+                            headerRowClassName="border-b border-gray-100 text-xs font-medium text-gray-500"
+                            columns={
+                                <>
+                                    <th className="px-5 py-3">Sl.no.</th>
                                     <th className="px-5 py-3">Name</th>
                                     <th className="px-5 py-3">Status</th>
                                     <th className="px-5 py-3">Last Visit</th>
                                     <th className="px-5 py-3 text-right">Conditions</th>
+                                </>
+                            }
+                            footer={
+                                <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+                                    <p>Showing 1 to {patientSnapshot.length} of {patientSnapshot.length} patients</p>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            disabled
+                                            className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            Previous
+                                        </button>
+                                        <span className="rounded-full bg-gray-100 px-3 py-2 text-gray-700">
+                                            1 / {patientSnapshotTotalPages}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            disabled
+                                            className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        >
+                            {patientSnapshot.map((patient, index) => (
+                                <tr
+                                    key={patient.id}
+                                    onClick={() => navigate(getPatientDetailUrl(patient))}
+                                    className="cursor-pointer transition hover:bg-gray-50 active:bg-gray-100"
+                                >
+                                    <td className="whitespace-nowrap px-5 py-4 text-gray-500">
+                                        {index + 1}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <span className="font-medium text-gray-950 transition hover:text-[#0b1f4d]">
+                                            {getFullName(patient)}
+                                        </span>
+                                        <p className="text-xs text-gray-500">{patient.address.city}</p>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                                <Badge tone={getStatusTone(patient.status)}>
+                                                    {formatLabel(patient.status)}
+                                                </Badge>
+                                            </td>
+                                    <td className="px-5 py-4 text-gray-600">{formatShortDate(patient.lastVisitAt)}</td>
+                                    <td className="px-5 py-4 text-right font-semibold text-gray-950">{patient.chronicConditions.length}</td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {patientSnapshot.map((patient) => (
-                                    <tr
-                                        key={patient.id}
-                                        className="transition hover:bg-gray-50"
-                                    >
-                                        <td className="px-5 py-4">
-                                            <Link
-                                                to={getPatientDetailUrl(patient)}
-                                                className="cursor-pointer font-medium text-gray-950 transition hover:text-[#0b1f4d] active:scale-[0.98]"
-                                            >
-                                                {getFullName(patient)}
-                                            </Link>
-                                            <p className="text-xs text-gray-500">
-                                                {patient.address.city}
-                                            </p>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span
-                                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${getStatusClass(patient.status)}`}
-                                            >
-                                                {formatLabel(patient.status)}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4 text-gray-600">
-                                            {formatShortDate(patient.lastVisitAt)}
-                                        </td>
-                                        <td className="px-5 py-4 text-right font-semibold text-gray-950">
-                                            {patient.chronicConditions.length}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                            ))}
+                        </DataTable>
+                    </>
+                )}
+
+                {activeTab === "users" && showUserDirectory && <UserDirectory embedded />}
             </section>
+            )}
         </div>
     );
 }

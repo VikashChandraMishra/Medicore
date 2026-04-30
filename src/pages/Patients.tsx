@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
+import Badge, { type BadgeTone } from "../components/ui/Badge";
 import CloseButton from "../components/ui/CloseButton";
+import DataTable from "../components/ui/DataTable";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
@@ -106,22 +108,10 @@ function getStableRoomNumber(patient: Patient) {
     return getRoomNumber(patient, Math.max(0, patientIndex));
 }
 
-function getStatusSoftClass(status: PatientStatus) {
-    if (status === PATIENT_STATUS.ACTIVE) return "bg-green-700";
-    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-700";
-    return "bg-amber-700";
-}
-
-function StatusBadge({ status, isSelected = false }: { status: PatientStatus; isSelected?: boolean }) {
-    return (
-        <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium ${isSelected
-            ? "bg-white text-[#0b1f4d]"
-            : `text-white ${getStatusSoftClass(status)}`
-            }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-current" : "bg-white"}`} />
-            {formatLabel(status)}
-        </span>
-    );
+function getStatusTone(status: PatientStatus): BadgeTone {
+    if (status === PATIENT_STATUS.ACTIVE) return "green";
+    if (status === PATIENT_STATUS.CRITICAL) return "red";
+    return "amber";
 }
 
 function truncateText(value: string, maxLength = 96) {
@@ -535,7 +525,9 @@ export default function Patients() {
                                             }`}
                                     >
                                         <div className="mb-3 flex items-center justify-between gap-3">
-                                            <StatusBadge status={patient.status} isSelected={isSelected} />
+                                            <Badge tone={getStatusTone(patient.status)} selected={isSelected}>
+                                                {formatLabel(patient.status)}
+                                            </Badge>
                                             <span className={`text-sm ${getSelectedTextClass(isSelected, "text-gray-500")}`}>
                                                 {formatDate(patient.lastVisitAt)}
                                             </span>
@@ -613,33 +605,61 @@ export default function Patients() {
                         </div>
                         </>
                     ) : (
-                        <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200">
-                        <div className="max-h-180 overflow-auto">
-                            <table className="w-full min-w-245 border-collapse text-left text-sm">
-                                <thead className="sticky top-0 z-0 bg-white">
-                                    <tr className="border-y border-gray-100 text-xs font-medium text-gray-500">
-                                        <th className="px-3 py-3">Admission Date</th>
-                                        <th className="px-3 py-3">Patient</th>
-                                        <th className="px-3 py-3">Diagnosis</th>
-                                        <th className="px-3 py-3">Room Number</th>
-                                        <th className="px-3 py-3">Assigned Doctor</th>
-                                        <th className="px-3 py-3 text-center">Insurance</th>
-                                        <th className="px-3 py-3">Status</th>
-                                        <th className="w-12 px-5 py-3" />
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <DataTable
+                            minWidthClassName="min-w-245"
+                            maxHeightClassName="max-h-180"
+                            columns={
+                                <>
+                                    <th className="px-3 py-3">Sl.no.</th>
+                                    <th className="px-3 py-3">Admission Date</th>
+                                    <th className="px-3 py-3">Patient</th>
+                                    <th className="px-3 py-3">Diagnosis</th>
+                                    <th className="px-3 py-3">Room Number</th>
+                                    <th className="px-3 py-3">Assigned Doctor</th>
+                                    <th className="px-3 py-3 text-center">Insurance</th>
+                                    <th className="px-3 py-3">Status</th>
+                                    <th className="w-12 px-5 py-3" />
+                                </>
+                            }
+                            footer={
+                                <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="ml-auto flex items-center gap-2">
+                                        <button
+                                            onClick={() =>
+                                                setCurrentPage((page) => Math.max(1, page - 1))
+                                            }
+                                            disabled={safeCurrentPage === 1}
+                                            className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            Previous
+                                        </button>
+                                        <span className="rounded-full bg-gray-100 px-3 py-2 text-gray-700">
+                                            {safeCurrentPage} / {totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() =>
+                                                setCurrentPage((page) => Math.min(totalPages, page + 1))
+                                            }
+                                            disabled={safeCurrentPage === totalPages}
+                                            className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        >
                                     {paginatedPatients.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={8}
+                                                colSpan={9}
                                                 className="px-5 py-12 text-center text-sm text-gray-500"
                                             >
                                                 No patients match the criteria
                                             </td>
                                         </tr>
                                     ) : (
-                                        paginatedPatients.map((patient) => {
+                                        paginatedPatients.map((patient, index) => {
                                             const doctor = getDoctorMeta(patient);
                                             const insured = patient.insurance.isActive;
                                             const isSelected = selected?.id === patient.id && isDetailsOpen;
@@ -648,11 +668,14 @@ export default function Patients() {
                                                 <tr
                                                     key={patient.id}
                                                     onClick={() => togglePatientSelection(patient)}
-                                                    className={`cursor-pointer border-b border-gray-100 transition active:bg-gray-100 ${isSelected
+                                                    className={`cursor-pointer transition active:bg-gray-100 ${isSelected
                                                         ? "bg-[#0b1f4d] text-white hover:bg-[#0b1f4d]"
                                                         : "hover:bg-gray-50/80"
                                                         }`}
                                                 >
+                                                    <td className={`whitespace-nowrap px-3 py-3 ${getSelectedTextClass(isSelected, "text-gray-500")}`}>
+                                                        {pageStartIndex + index + 1}
+                                                    </td>
                                                     <td className={`whitespace-nowrap px-3 py-3 ${getSelectedTextClass(isSelected, "text-gray-900")}`}>
                                                         {formatDate(patient.lastVisitAt)}
                                                     </td>
@@ -713,7 +736,9 @@ export default function Patients() {
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-3">
-                                                        <StatusBadge status={patient.status} isSelected={isSelected} />
+                                                        <Badge tone={getStatusTone(patient.status)} selected={isSelected}>
+                                                            {formatLabel(patient.status)}
+                                                        </Badge>
                                                     </td>
                                                     <td className={`px-5 py-3 text-right text-xl leading-none ${getSelectedTextClass(isSelected, "text-gray-400")}`}>
                                                         <MoreVertical className="ml-auto h-4 w-4" />
@@ -722,36 +747,7 @@ export default function Patients() {
                                             );
                                         })
                                     )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="ml-auto flex items-center gap-2">
-                                <button
-                                    onClick={() =>
-                                        setCurrentPage((page) => Math.max(1, page - 1))
-                                    }
-                                    disabled={safeCurrentPage === 1}
-                                    className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                    Previous
-                                </button>
-                                <span className="rounded-full bg-gray-100 px-3 py-2 text-gray-700">
-                                    {safeCurrentPage} / {totalPages}
-                                </span>
-                                <button
-                                    onClick={() =>
-                                        setCurrentPage((page) => Math.min(totalPages, page + 1))
-                                    }
-                                    disabled={safeCurrentPage === totalPages}
-                                    className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                        </div>
+                        </DataTable>
                     )}
                 </div>
 

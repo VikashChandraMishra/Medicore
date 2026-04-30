@@ -22,6 +22,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
+import Badge, { type BadgeTone } from "../components/ui/Badge";
 import Select from "../components/ui/Select";
 import { GENDERS, NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
 import { mockPatients } from "../data/patients";
@@ -171,10 +172,10 @@ function getRiskScore(patient: Patient) {
     return statusScore + emergencyVisits + warningNotes;
 }
 
-function getStatusClass(status: Patient["status"]) {
-    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-50 text-red-700";
-    if (status === PATIENT_STATUS.INACTIVE) return "bg-amber-50 text-amber-700";
-    return "bg-emerald-50 text-emerald-700";
+function getStatusTone(status: Patient["status"]): BadgeTone {
+    if (status === PATIENT_STATUS.CRITICAL) return "red";
+    if (status === PATIENT_STATUS.INACTIVE) return "amber";
+    return "green";
 }
 
 export default function Analytics() {
@@ -598,11 +599,9 @@ export default function Analytics() {
                                         <p className="font-semibold text-gray-950">
                                             {getFullName(entry.patient)}
                                         </p>
-                                        <span
-                                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClass(entry.patient.status)}`}
-                                        >
+                                        <Badge tone={getStatusTone(entry.patient.status)}>
                                             {formatLabel(entry.patient.status)}
-                                        </span>
+                                        </Badge>
                                     </div>
                                     <p className="mt-1 text-sm text-gray-500">
                                         {entry.patient.chronicConditions.join(", ") || "General care"}

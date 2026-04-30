@@ -80,7 +80,7 @@ export const mockDoctors: User[] = [
         email: "bhavesh.shah@medicore.example",
         password: "MediCore@123",
         role: USER_ROLES.DOCTOR,
-        status: USER_STATUS.ACTIVE,
+        status: USER_STATUS.INACTIVE,
         createdAt: date("2023-09-12T10:20:00+05:30"),
         updatedAt: date("2026-01-17T12:40:00+05:30"),
     },

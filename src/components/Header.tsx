@@ -2,7 +2,7 @@ import { Link } from "react-router";
 
 export default function Header() {
     return (
-        <header className="sticky top-0 z-50 border-b border-gray-200 bg-gray-50/95 backdrop-blur">
+        <header className="shrink-0 border-b border-gray-200 bg-gray-50/95 backdrop-blur">
             <div className="flex items-center justify-between px-8 py-5 max-w-7xl mx-auto">
                 {/* Left: Logo + Name */}
                 <div className="flex items-center gap-3">

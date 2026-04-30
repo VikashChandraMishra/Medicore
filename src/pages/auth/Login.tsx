@@ -65,7 +65,7 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+        <div className="flex h-full items-center justify-center bg-gray-50 px-6">
             <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
                 <h1 className="mb-2 text-center text-3xl font-semibold text-gray-950">
                     Welcome back

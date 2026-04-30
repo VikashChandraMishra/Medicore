@@ -51,13 +51,12 @@ export interface Patient {
 }
 
 export interface Visit {
-    id: string;
     patientId: string;
 
     date: Date;
     type: VisitType;
 
-    doctorName: string;
+    doctorId: string;
 
     symptoms: string[];
     diagnosis?: string;
@@ -71,12 +70,11 @@ export interface Visit {
 }
 
 export interface Note {
-    id: string;
     patientId: string;
 
     content: string;
     type: NoteType;
 
-    createdBy: string;
+    doctorId: string;
     createdAt: Date;
 }

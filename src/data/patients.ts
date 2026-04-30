@@ -10,7 +10,7 @@ const date = (value: string) => new Date(value);
 
 export const mockPatients: Patient[] = [
     {
-        id: "pat-1001",
+        id: "PAT-001",
         firstName: "Ananya",
         lastName: "Rao",
         gender: GENDERS.FEMALE,
@@ -41,11 +41,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-18T11:05:00+05:30"),
         visits: [
             {
-                id: "vis-1001-01",
-                patientId: "pat-1001",
+                patientId: "PAT-001",
                 date: date("2025-12-06T09:40:00+05:30"),
                 type: VISIT_TYPES.ROUTINE,
-                doctorName: "Dr. Kavita Menon",
+                doctorId: "DOC-001",
                 symptoms: ["Fatigue after meals", "Mild weight gain", "Dry skin"],
                 diagnosis: "Suboptimal glycemic control with stable hypothyroidism",
                 prescription:
@@ -60,11 +59,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2025-12-06T10:10:00+05:30"),
             },
             {
-                id: "vis-1001-02",
-                patientId: "pat-1001",
+                patientId: "PAT-001",
                 date: date("2026-02-21T16:20:00+05:30"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Kavita Menon",
+                doctorId: "DOC-001",
                 symptoms: ["Occasional tingling in feet", "Post-dinner glucose spikes"],
                 diagnosis: "Early peripheral neuropathy symptoms; diabetes follow-up",
                 prescription:
@@ -79,11 +77,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2026-02-21T16:55:00+05:30"),
             },
             {
-                id: "vis-1001-03",
-                patientId: "pat-1001",
+                patientId: "PAT-001",
                 date: date("2026-04-18T10:15:00+05:30"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Rehan Suri",
+                doctorId: "DOC-002",
                 symptoms: ["Dry cough", "Throat irritation", "Sneezing"],
                 diagnosis: "Seasonal allergic rhinitis with mild viral upper respiratory infection",
                 prescription:
@@ -100,27 +97,25 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1001-01",
-                patientId: "pat-1001",
+                patientId: "PAT-001",
                 content:
                     "Patient prefers Saturday morning appointments and usually brings printed glucose logs. She is highly engaged when targets are explained numerically.",
                 type: NOTE_TYPES.GENERAL,
-                createdBy: "Nurse Priya Nair",
+                doctorId: "DOC-001",
                 createdAt: date("2026-02-21T17:05:00+05:30"),
             },
             {
-                id: "note-1001-02",
-                patientId: "pat-1001",
+                patientId: "PAT-001",
                 content:
                     "Penicillin allergy confirmed from childhood reaction with facial swelling. Avoid beta-lactam prescriptions unless allergy evaluation is completed.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Dr. Kavita Menon",
+                doctorId: "DOC-001",
                 createdAt: date("2026-04-18T10:58:00+05:30"),
             },
         ],
     },
     {
-        id: "pat-1002",
+        id: "PAT-002",
         firstName: "Michael",
         lastName: "Chen",
         gender: GENDERS.MALE,
@@ -151,11 +146,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-11T09:25:00-07:00"),
         visits: [
             {
-                id: "vis-1002-01",
-                patientId: "pat-1002",
+                patientId: "PAT-002",
                 date: date("2026-01-09T08:30:00-08:00"),
                 type: VISIT_TYPES.ROUTINE,
-                doctorName: "Dr. Melissa Hart",
+                doctorId: "DOC-003",
                 symptoms: ["Morning headaches", "Home BP readings around 145/92"],
                 diagnosis: "Stage 2 hypertension, likely worsened by inconsistent CPAP use",
                 prescription:
@@ -170,11 +164,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2026-01-09T09:05:00-08:00"),
             },
             {
-                id: "vis-1002-02",
-                patientId: "pat-1002",
+                patientId: "PAT-002",
                 date: date("2026-04-11T08:45:00-07:00"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Melissa Hart",
+                doctorId: "DOC-003",
                 symptoms: ["Improved sleep", "Occasional lightheadedness after workouts"],
                 diagnosis: "Improving blood pressure control",
                 prescription:
@@ -191,18 +184,17 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1002-01",
-                patientId: "pat-1002",
+                patientId: "PAT-002",
                 content:
                     "Uses a shared home BP cuff with spouse; asked to bring device to next appointment for calibration against clinic measurement.",
                 type: NOTE_TYPES.FOLLOW_UP,
-                createdBy: "Dr. Melissa Hart",
+                doctorId: "DOC-003",
                 createdAt: date("2026-04-11T09:22:00-07:00"),
             },
         ],
     },
     {
-        id: "pat-1003",
+        id: "PAT-003",
         firstName: "Farah",
         lastName: "Khan",
         gender: GENDERS.FEMALE,
@@ -233,11 +225,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-03-29T12:48:00+05:30"),
         visits: [
             {
-                id: "vis-1003-01",
-                patientId: "pat-1003",
+                patientId: "PAT-003",
                 date: date("2026-03-29T12:10:00+05:30"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Nikhil Batra",
+                doctorId: "DOC-004",
                 symptoms: ["Left-sided headache", "Visual zig-zag aura", "Nausea", "Light sensitivity"],
                 diagnosis: "Migraine with aura triggered by sleep deprivation",
                 prescription:
@@ -255,7 +246,7 @@ export const mockPatients: Patient[] = [
         notes: [],
     },
     {
-        id: "pat-1004",
+        id: "PAT-004",
         firstName: "Ramesh",
         lastName: "Iyer",
         gender: GENDERS.MALE,
@@ -286,11 +277,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-28T08:15:00+05:30"),
         visits: [
             {
-                id: "vis-1004-01",
-                patientId: "pat-1004",
+                patientId: "PAT-004",
                 date: date("2026-02-13T10:30:00+05:30"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Arvind Narayanan",
+                doctorId: "DOC-005",
                 symptoms: ["Reduced exercise tolerance", "Mild ankle swelling"],
                 diagnosis: "Stable chronic heart failure with mild fluid retention",
                 prescription:
@@ -305,11 +295,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2026-02-13T11:12:00+05:30"),
             },
             {
-                id: "vis-1004-02",
-                patientId: "pat-1004",
+                patientId: "PAT-004",
                 date: date("2026-04-27T21:35:00+05:30"),
                 type: VISIT_TYPES.EMERGENCY,
-                doctorName: "Dr. Leela Thomas",
+                doctorId: "DOC-006",
                 symptoms: ["Breathlessness at rest", "Orthopnea", "Swollen legs", "Dry cough"],
                 diagnosis: "Acute decompensated heart failure",
                 prescription:
@@ -326,27 +315,25 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1004-01",
-                patientId: "pat-1004",
+                patientId: "PAT-004",
                 content:
                     "High readmission risk. Daughter Meera is primary caregiver and should be called for medication changes because patient sometimes misunderstands alternate-day dosing.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Dr. Arvind Narayanan",
+                doctorId: "DOC-005",
                 createdAt: date("2026-02-13T11:20:00+05:30"),
             },
             {
-                id: "note-1004-02",
-                patientId: "pat-1004",
+                patientId: "PAT-004",
                 content:
                     "After emergency admission, reconcile diuretic and anticoagulant plan before discharge. Schedule cardiology review within 7 days of discharge.",
                 type: NOTE_TYPES.FOLLOW_UP,
-                createdBy: "Charge Nurse Lakshmi",
+                doctorId: "DOC-006",
                 createdAt: date("2026-04-28T08:15:00+05:30"),
             },
         ],
     },
     {
-        id: "pat-1005",
+        id: "PAT-005",
         firstName: "Emily",
         lastName: "Rodriguez",
         gender: GENDERS.FEMALE,
@@ -377,11 +364,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-04T14:45:00-05:00"),
         visits: [
             {
-                id: "vis-1005-01",
-                patientId: "pat-1005",
+                patientId: "PAT-005",
                 date: date("2025-11-22T09:15:00-06:00"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Hannah Price",
+                doctorId: "DOC-007",
                 symptoms: ["Wheezing after running", "Chest tightness in cold air"],
                 diagnosis: "Exercise-induced bronchospasm",
                 prescription:
@@ -396,11 +382,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2025-11-22T09:48:00-06:00"),
             },
             {
-                id: "vis-1005-02",
-                patientId: "pat-1005",
+                patientId: "PAT-005",
                 date: date("2026-04-04T14:00:00-05:00"),
                 type: VISIT_TYPES.ROUTINE,
-                doctorName: "Dr. Hannah Price",
+                doctorId: "DOC-007",
                 symptoms: ["Palpitations during stressful meetings", "Poor sleep"],
                 diagnosis: "Anxiety symptoms with stable asthma",
                 prescription:
@@ -417,18 +402,17 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1005-01",
-                patientId: "pat-1005",
+                patientId: "PAT-005",
                 content:
                     "Latex allergy added to chart after patient reported hives during a dental procedure using latex gloves.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Nurse Jordan Mills",
+                doctorId: "DOC-007",
                 createdAt: date("2025-11-22T09:55:00-06:00"),
             },
         ],
     },
     {
-        id: "pat-1006",
+        id: "PAT-006",
         firstName: "Suresh",
         lastName: "Patel",
         gender: GENDERS.MALE,
@@ -459,11 +443,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2025-10-17T18:05:00+05:30"),
         visits: [
             {
-                id: "vis-1006-01",
-                patientId: "pat-1006",
+                patientId: "PAT-006",
                 date: date("2025-10-17T17:30:00+05:30"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Bhavesh Shah",
+                doctorId: "DOC-008",
                 symptoms: ["Knee stiffness in morning", "Pain while climbing stairs", "Occasional swelling"],
                 diagnosis: "Moderate bilateral knee osteoarthritis",
                 prescription:
@@ -481,7 +464,7 @@ export const mockPatients: Patient[] = [
         notes: [],
     },
     {
-        id: "pat-1007",
+        id: "PAT-007",
         firstName: "Grace",
         lastName: "Okafor",
         gender: GENDERS.FEMALE,
@@ -512,11 +495,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-20T11:58:00+01:00"),
         visits: [
             {
-                id: "vis-1007-01",
-                patientId: "pat-1007",
+                patientId: "PAT-007",
                 date: date("2026-01-30T15:00:00+00:00"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Priya Wallace",
+                doctorId: "DOC-009",
                 symptoms: ["Fatigue", "Shortness of breath on stairs", "Heavy menstrual bleeding"],
                 diagnosis: "Symptomatic iron deficiency anemia",
                 prescription:
@@ -531,11 +513,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2026-01-30T15:35:00+00:00"),
             },
             {
-                id: "vis-1007-02",
-                patientId: "pat-1007",
+                patientId: "PAT-007",
                 date: date("2026-04-20T11:20:00+01:00"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Priya Wallace",
+                doctorId: "DOC-009",
                 symptoms: ["Improved energy", "Mild constipation from iron"],
                 diagnosis: "Iron deficiency anemia responding to treatment",
                 prescription:
@@ -552,18 +533,17 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1007-01",
-                patientId: "pat-1007",
+                patientId: "PAT-007",
                 content:
                     "Patient is a teacher and prefers appointments after 4 PM during term time; morning visits are easier during school holidays.",
                 type: NOTE_TYPES.GENERAL,
-                createdBy: "Reception Team",
+                doctorId: "DOC-009",
                 createdAt: date("2026-04-20T11:55:00+01:00"),
             },
         ],
     },
     {
-        id: "pat-1008",
+        id: "PAT-008",
         firstName: "Dev",
         lastName: "Malhotra",
         gender: GENDERS.MALE,
@@ -594,11 +574,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-02T19:50:00+05:30"),
         visits: [
             {
-                id: "vis-1008-01",
-                patientId: "pat-1008",
+                patientId: "PAT-008",
                 date: date("2026-04-02T19:10:00+05:30"),
                 type: VISIT_TYPES.EMERGENCY,
-                doctorName: "Dr. Ira Kapoor",
+                doctorId: "DOC-010",
                 symptoms: ["Lip swelling", "Itchy rash", "Throat tightness", "Cough"],
                 diagnosis: "Anaphylaxis after accidental nut exposure",
                 prescription:
@@ -615,18 +594,17 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1008-01",
-                patientId: "pat-1008",
+                patientId: "PAT-008",
                 content:
                     "Call mother, Nisha Malhotra, for consent and medication changes. School nurse requested updated allergy action plan after emergency visit.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Dr. Ira Kapoor",
+                doctorId: "DOC-010",
                 createdAt: date("2026-04-02T19:50:00+05:30"),
             },
         ],
     },
     {
-        id: "pat-1009",
+        id: "PAT-009",
         firstName: "Linda",
         lastName: "Walker",
         gender: GENDERS.FEMALE,
@@ -657,11 +635,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-25T08:40:00-05:00"),
         visits: [
             {
-                id: "vis-1009-01",
-                patientId: "pat-1009",
+                patientId: "PAT-009",
                 date: date("2025-12-12T13:20:00-06:00"),
                 type: VISIT_TYPES.ROUTINE,
-                doctorName: "Dr. Robert Kim",
+                doctorId: "DOC-011",
                 symptoms: ["Daily productive cough", "Shortness of breath with groceries"],
                 diagnosis: "Moderate COPD, stable",
                 prescription:
@@ -676,11 +653,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2025-12-12T13:55:00-06:00"),
             },
             {
-                id: "vis-1009-02",
-                patientId: "pat-1009",
+                patientId: "PAT-009",
                 date: date("2026-04-25T07:50:00-05:00"),
                 type: VISIT_TYPES.EMERGENCY,
-                doctorName: "Dr. Amanda Lee",
+                doctorId: "DOC-012",
                 symptoms: ["Severe breathlessness", "Wheezing", "Green sputum", "Feverish feeling"],
                 diagnosis: "Acute COPD exacerbation, likely infectious",
                 prescription:
@@ -697,27 +673,25 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1009-01",
-                patientId: "pat-1009",
+                patientId: "PAT-009",
                 content:
                     "Avoid codeine-containing cough syrups. Patient reports severe nausea, confusion, and near-fall after prior codeine use.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Dr. Robert Kim",
+                doctorId: "DOC-011",
                 createdAt: date("2025-12-12T14:00:00-06:00"),
             },
             {
-                id: "note-1009-02",
-                patientId: "pat-1009",
+                patientId: "PAT-009",
                 content:
                     "Transportation barrier affects pulmonary rehab attendance. Social work referral placed to review ride options and home exercise alternatives.",
                 type: NOTE_TYPES.FOLLOW_UP,
-                createdBy: "Nurse Evelyn Grant",
+                doctorId: "DOC-012",
                 createdAt: date("2026-04-25T08:40:00-05:00"),
             },
         ],
     },
     {
-        id: "pat-1010",
+        id: "PAT-010",
         firstName: "Neha",
         lastName: "Joshi",
         gender: GENDERS.FEMALE,
@@ -748,11 +722,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-03-18T18:52:00+05:30"),
         visits: [
             {
-                id: "vis-1010-01",
-                patientId: "pat-1010",
+                patientId: "PAT-010",
                 date: date("2025-09-09T17:40:00+05:30"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Shalini Deshpande",
+                doctorId: "DOC-013",
                 symptoms: ["Irregular periods", "Acne flare", "Weight gain"],
                 diagnosis: "PCOS with insulin resistance features",
                 prescription:
@@ -767,11 +740,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2025-09-09T18:18:00+05:30"),
             },
             {
-                id: "vis-1010-02",
-                patientId: "pat-1010",
+                patientId: "PAT-010",
                 date: date("2026-03-18T18:15:00+05:30"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Shalini Deshpande",
+                doctorId: "DOC-013",
                 symptoms: ["Cycles more regular", "Mild nausea with Metformin"],
                 diagnosis: "PCOS improving on lifestyle and Metformin",
                 prescription:
@@ -788,18 +760,17 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1010-01",
-                patientId: "pat-1010",
+                patientId: "PAT-010",
                 content:
                     "Patient prefers detailed lab explanations and tracks cycle dates in a phone app. Ask her to share screenshots during reviews.",
                 type: NOTE_TYPES.GENERAL,
-                createdBy: "Dr. Shalini Deshpande",
+                doctorId: "DOC-013",
                 createdAt: date("2026-03-18T18:52:00+05:30"),
             },
         ],
     },
     {
-        id: "pat-1011",
+        id: "PAT-011",
         firstName: "Omar",
         lastName: "Haddad",
         gender: GENDERS.MALE,
@@ -830,11 +801,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-02-05T10:05:00+04:00"),
         visits: [
             {
-                id: "vis-1011-01",
-                patientId: "pat-1011",
+                patientId: "PAT-011",
                 date: date("2026-02-05T09:30:00+04:00"),
                 type: VISIT_TYPES.ROUTINE,
-                doctorName: "Dr. Samir Nasser",
+                doctorId: "DOC-014",
                 symptoms: ["Heartburn after late dinners", "Bloating", "Intermittent right upper abdominal discomfort"],
                 diagnosis: "GERD flare with known fatty liver disease",
                 prescription:
@@ -852,7 +822,7 @@ export const mockPatients: Patient[] = [
         notes: [],
     },
     {
-        id: "pat-1012",
+        id: "PAT-012",
         firstName: "Mei",
         lastName: "Tan",
         gender: GENDERS.FEMALE,
@@ -883,11 +853,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-14T17:12:00+08:00"),
         visits: [
             {
-                id: "vis-1012-01",
-                patientId: "pat-1012",
+                patientId: "PAT-012",
                 date: date("2026-04-14T16:40:00+08:00"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Elaine Wong",
+                doctorId: "DOC-015",
                 symptoms: ["Right ear pain", "Fever", "Reduced appetite", "Trouble sleeping"],
                 diagnosis: "Acute otitis media, right ear",
                 prescription:
@@ -904,18 +873,17 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1012-01",
-                patientId: "pat-1012",
+                patientId: "PAT-012",
                 content:
                     "Medication dosing must be confirmed by current weight at each visit. Parent reports rash and wheeze after amoxicillin at age 5.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Dr. Elaine Wong",
+                doctorId: "DOC-015",
                 createdAt: date("2026-04-14T17:12:00+08:00"),
             },
         ],
     },
     {
-        id: "pat-1013",
+        id: "PAT-013",
         firstName: "Carlos",
         lastName: "Mendez",
         gender: GENDERS.MALE,
@@ -946,11 +914,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-07T11:05:00-04:00"),
         visits: [
             {
-                id: "vis-1013-01",
-                patientId: "pat-1013",
+                patientId: "PAT-013",
                 date: date("2025-08-19T11:00:00-04:00"),
                 type: VISIT_TYPES.EMERGENCY,
-                doctorName: "Dr. Elena Vargas",
+                doctorId: "DOC-016",
                 symptoms: ["Severe pain in right big toe", "Redness", "Swelling", "Unable to wear shoe"],
                 diagnosis: "Acute gout flare of first metatarsophalangeal joint",
                 prescription:
@@ -965,11 +932,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2025-08-19T11:38:00-04:00"),
             },
             {
-                id: "vis-1013-02",
-                patientId: "pat-1013",
+                patientId: "PAT-013",
                 date: date("2026-04-07T10:25:00-04:00"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Elena Vargas",
+                doctorId: "DOC-016",
                 symptoms: ["Two gout flares in 6 months", "Persistent low back stiffness"],
                 diagnosis: "Recurrent gout; mechanical low back pain",
                 prescription:
@@ -986,18 +952,17 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1013-01",
-                patientId: "pat-1013",
+                patientId: "PAT-013",
                 content:
                     "Carries epinephrine auto-injector for bee venom allergy after prior systemic reaction during landscaping work.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Dr. Elena Vargas",
+                doctorId: "DOC-016",
                 createdAt: date("2026-04-07T11:05:00-04:00"),
             },
         ],
     },
     {
-        id: "pat-1014",
+        id: "PAT-014",
         firstName: "Isha",
         lastName: "Banerjee",
         gender: GENDERS.FEMALE,
@@ -1028,11 +993,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-04-22T16:18:00+05:30"),
         visits: [
             {
-                id: "vis-1014-01",
-                patientId: "pat-1014",
+                patientId: "PAT-014",
                 date: date("2025-12-03T15:10:00+05:30"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Aditi Sen",
+                doctorId: "DOC-017",
                 symptoms: ["Low mood", "Loss of interest", "Early morning waking", "Poor appetite"],
                 diagnosis: "Moderate depressive episode",
                 prescription:
@@ -1047,11 +1011,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2025-12-03T15:55:00+05:30"),
             },
             {
-                id: "vis-1014-02",
-                patientId: "pat-1014",
+                patientId: "PAT-014",
                 date: date("2026-01-08T16:00:00+05:30"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Aditi Sen",
+                doctorId: "DOC-017",
                 symptoms: ["Mood slightly better", "Mild nausea", "Reduced crying spells"],
                 diagnosis: "Depression improving on SSRI",
                 prescription:
@@ -1066,11 +1029,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2026-01-08T16:35:00+05:30"),
             },
             {
-                id: "vis-1014-03",
-                patientId: "pat-1014",
+                patientId: "PAT-014",
                 date: date("2026-04-22T15:30:00+05:30"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Aditi Sen",
+                doctorId: "DOC-017",
                 symptoms: ["Stable mood", "Occasional anxiety before exams", "Normal appetite"],
                 diagnosis: "Major depressive disorder in partial remission",
                 prescription:
@@ -1087,27 +1049,25 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1014-01",
-                patientId: "pat-1014",
+                patientId: "PAT-014",
                 content:
                     "Safety plan documented. Emergency contact is mother, Suchitra Banerjee. Patient prefers direct, private discussion before family is involved unless safety concern escalates.",
                 type: NOTE_TYPES.WARNING,
-                createdBy: "Dr. Aditi Sen",
+                doctorId: "DOC-017",
                 createdAt: date("2025-12-03T16:05:00+05:30"),
             },
             {
-                id: "note-1014-02",
-                patientId: "pat-1014",
+                patientId: "PAT-014",
                 content:
                     "Good response to therapy and medication. Review taper only after sustained remission and low-stress academic period.",
                 type: NOTE_TYPES.FOLLOW_UP,
-                createdBy: "Dr. Aditi Sen",
+                doctorId: "DOC-017",
                 createdAt: date("2026-04-22T16:18:00+05:30"),
             },
         ],
     },
     {
-        id: "pat-1015",
+        id: "PAT-015",
         firstName: "Noah",
         lastName: "Stein",
         gender: GENDERS.OTHER,
@@ -1138,11 +1098,10 @@ export const mockPatients: Patient[] = [
         updatedAt: date("2026-03-05T09:50:00-08:00"),
         visits: [
             {
-                id: "vis-1015-01",
-                patientId: "pat-1015",
+                patientId: "PAT-015",
                 date: date("2024-11-18T10:30:00-08:00"),
                 type: VISIT_TYPES.CONSULTATION,
-                doctorName: "Dr. Nina Patel",
+                doctorId: "DOC-018",
                 symptoms: ["Chronic bloating", "Loose stools", "Unintentional weight loss", "Mouth ulcers"],
                 diagnosis: "Newly diagnosed celiac disease",
                 prescription:
@@ -1157,11 +1116,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2024-11-18T11:08:00-08:00"),
             },
             {
-                id: "vis-1015-02",
-                patientId: "pat-1015",
+                patientId: "PAT-015",
                 date: date("2025-05-20T09:45:00-07:00"),
                 type: VISIT_TYPES.FOLLOW_UP,
-                doctorName: "Dr. Nina Patel",
+                doctorId: "DOC-018",
                 symptoms: ["Less bloating", "Occasional diarrhea after restaurant meals"],
                 diagnosis: "Celiac disease with intermittent gluten exposure",
                 prescription:
@@ -1176,11 +1134,10 @@ export const mockPatients: Patient[] = [
                 createdAt: date("2025-05-20T10:20:00-07:00"),
             },
             {
-                id: "vis-1015-03",
-                patientId: "pat-1015",
+                patientId: "PAT-015",
                 date: date("2026-03-05T09:05:00-08:00"),
                 type: VISIT_TYPES.ROUTINE,
-                doctorName: "Dr. Nina Patel",
+                doctorId: "DOC-018",
                 symptoms: ["Stable digestion", "Mild fatigue near end of B12 dosing interval"],
                 diagnosis: "Celiac disease well controlled; B12 deficiency under treatment",
                 prescription:
@@ -1197,12 +1154,11 @@ export const mockPatients: Patient[] = [
         ],
         notes: [
             {
-                id: "note-1015-01",
-                patientId: "pat-1015",
+                patientId: "PAT-015",
                 content:
                     "Uses they/them pronouns. Adhesive tape causes blistering; use paper tape or wrap alternatives for blood draws and dressings.",
                 type: NOTE_TYPES.GENERAL,
-                createdBy: "Nurse Alex Morgan",
+                doctorId: "DOC-018",
                 createdAt: date("2026-03-05T09:50:00-08:00"),
             },
         ],

@@ -1,7 +1,7 @@
 import type { UserRole, UserStatus } from "../constants/user";
 
 export interface User {
-    uid: string;
+    id: string;
 
     displayName: string;
     email: string;

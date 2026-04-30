@@ -5,7 +5,7 @@ const date = (value: string) => new Date(value);
 
 export const mockDoctors: User[] = [
     {
-        uid: "doc-kavita-menon",
+        id: "DOC-001",
         displayName: "Dr. Kavita Menon",
         email: "kavita.menon@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -14,7 +14,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-18T11:05:00+05:30"),
     },
     {
-        uid: "doc-rehan-suri",
+        id: "DOC-002",
         displayName: "Dr. Rehan Suri",
         email: "rehan.suri@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -23,7 +23,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-18T11:05:00+05:30"),
     },
     {
-        uid: "doc-melissa-hart",
+        id: "DOC-003",
         displayName: "Dr. Melissa Hart",
         email: "melissa.hart@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -32,7 +32,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-11T09:25:00-07:00"),
     },
     {
-        uid: "doc-nikhil-batra",
+        id: "DOC-004",
         displayName: "Dr. Nikhil Batra",
         email: "nikhil.batra@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -41,7 +41,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-03-29T12:48:00+05:30"),
     },
     {
-        uid: "doc-arvind-narayanan",
+        id: "DOC-005",
         displayName: "Dr. Arvind Narayanan",
         email: "arvind.narayanan@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -50,7 +50,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-28T08:15:00+05:30"),
     },
     {
-        uid: "doc-leela-thomas",
+        id: "DOC-006",
         displayName: "Dr. Leela Thomas",
         email: "leela.thomas@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -59,7 +59,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-28T08:15:00+05:30"),
     },
     {
-        uid: "doc-hannah-price",
+        id: "DOC-007",
         displayName: "Dr. Hannah Price",
         email: "hannah.price@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -68,7 +68,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-04T14:45:00-05:00"),
     },
     {
-        uid: "doc-bhavesh-shah",
+        id: "DOC-008",
         displayName: "Dr. Bhavesh Shah",
         email: "bhavesh.shah@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -77,7 +77,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-01-17T12:40:00+05:30"),
     },
     {
-        uid: "doc-priya-wallace",
+        id: "DOC-009",
         displayName: "Dr. Priya Wallace",
         email: "priya.wallace@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -86,7 +86,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-16T10:30:00+05:30"),
     },
     {
-        uid: "doc-ira-kapoor",
+        id: "DOC-010",
         displayName: "Dr. Ira Kapoor",
         email: "ira.kapoor@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -95,7 +95,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-19T19:35:00+05:30"),
     },
     {
-        uid: "doc-robert-kim",
+        id: "DOC-011",
         displayName: "Dr. Robert Kim",
         email: "robert.kim@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -104,7 +104,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-02-11T14:25:00-08:00"),
     },
     {
-        uid: "doc-amanda-lee",
+        id: "DOC-012",
         displayName: "Dr. Amanda Lee",
         email: "amanda.lee@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -113,7 +113,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-21T09:10:00+08:00"),
     },
     {
-        uid: "doc-shalini-deshpande",
+        id: "DOC-013",
         displayName: "Dr. Shalini Deshpande",
         email: "shalini.deshpande@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -122,7 +122,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-03-18T18:52:00+05:30"),
     },
     {
-        uid: "doc-samir-nasser",
+        id: "DOC-014",
         displayName: "Dr. Samir Nasser",
         email: "samir.nasser@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -131,7 +131,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-02-05T10:05:00+04:00"),
     },
     {
-        uid: "doc-elaine-wong",
+        id: "DOC-015",
         displayName: "Dr. Elaine Wong",
         email: "elaine.wong@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -140,7 +140,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-14T17:12:00+08:00"),
     },
     {
-        uid: "doc-elena-vargas",
+        id: "DOC-016",
         displayName: "Dr. Elena Vargas",
         email: "elena.vargas@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -149,7 +149,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-07T11:05:00-04:00"),
     },
     {
-        uid: "doc-aditi-sen",
+        id: "DOC-017",
         displayName: "Dr. Aditi Sen",
         email: "aditi.sen@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -158,7 +158,7 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-04-22T16:18:00+05:30"),
     },
     {
-        uid: "doc-nina-patel",
+        id: "DOC-018",
         displayName: "Dr. Nina Patel",
         email: "nina.patel@medicore.example",
         role: USER_ROLES.DOCTOR,
@@ -167,3 +167,4 @@ export const mockDoctors: User[] = [
         updatedAt: date("2026-03-05T09:50:00-08:00"),
     },
 ];
+

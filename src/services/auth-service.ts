@@ -2,22 +2,15 @@ import {
     GoogleAuthProvider,
     browserLocalPersistence,
     createUserWithEmailAndPassword,
-    deleteUser,
-    getAdditionalUserInfo,
     sendEmailVerification,
     setPersistence,
     signInWithEmailAndPassword,
     signInWithPopup,
     signOut,
-    type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { COLLECTIONS } from "../constants/collections";
-import { USER_ROLES, USER_STATUS } from "../constants/user";
-import { auth, db } from "../config/firebase-config";
+import { auth } from "../config/firebase-config";
 
 const googleProvider = new GoogleAuthProvider();
-const USER_DOCUMENT_CREATE_FAILED = "app/user-document-create-failed";
 
 export type AuthErrorDetails = {
     title: string;
@@ -35,76 +28,14 @@ const loginWithEmail = async (email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
 };
 
-const getFallbackDisplayName = (user: FirebaseUser) => {
-    if (user.displayName) return user.displayName;
-    if (user.email) return user.email.split("@")[0];
-
-    return "MediCore User";
-};
-
-const createUserDocument = async (user: FirebaseUser) => {
-    const userRef = doc(db, COLLECTIONS.USERS, user.uid);
-    const existingUser = await getDoc(userRef);
-
-    if (existingUser.exists()) {
-        await setDoc(
-            userRef,
-            {
-                lastLoginAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-        );
-        return;
-    }
-
-    await setDoc(userRef, {
-        uid: user.uid,
-        displayName: getFallbackDisplayName(user),
-        email: user.email ?? "",
-        role: USER_ROLES.STAFF,
-        status: USER_STATUS.ACTIVE,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        lastLoginAt: serverTimestamp(),
-    });
-};
-
 const loginWithGoogle = async () => {
     await ensureSessionPersistence();
-    const credential = await signInWithPopup(auth, googleProvider);
-    const userInfo = getAdditionalUserInfo(credential);
-
-    try {
-        await createUserDocument(credential.user);
-    } catch (error) {
-        if (userInfo?.isNewUser) {
-            await deleteUser(credential.user);
-        }
-
-        throw Object.assign(new Error("Unable to create user profile."), {
-            code: USER_DOCUMENT_CREATE_FAILED,
-            cause: error,
-        });
-    }
-
-    return credential;
+    return signInWithPopup(auth, googleProvider);
 };
 
 const signUpWithEmail = async (email: string, password: string) => {
     await ensureSessionPersistence();
     const credential = await createUserWithEmailAndPassword(auth, email, password);
-
-    try {
-        await createUserDocument(credential.user);
-    } catch (error) {
-        await deleteUser(credential.user);
-
-        throw Object.assign(new Error("Unable to create user profile."), {
-            code: USER_DOCUMENT_CREATE_FAILED,
-            cause: error,
-        });
-    }
 
     await sendEmailVerification(credential.user);
 
@@ -272,15 +203,6 @@ const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
         };
     }
 
-    if (code === USER_DOCUMENT_CREATE_FAILED) {
-        return {
-            title: "Account setup failed",
-            message: "Your authentication account was rolled back because your user profile could not be created. Please try again later.",
-            actionLabel: "Try again later",
-            variant: "error",
-        };
-    }
-
     return {
         title: "Something went wrong",
         message: "We could not complete this request. Please try again later.",
@@ -293,8 +215,6 @@ export const authService = {
     loginWithEmail,
     loginWithGoogle,
     signUpWithEmail,
-    createUserDocument,
-    USER_DOCUMENT_CREATE_FAILED,
     resendVerificationEmail,
     refreshCurrentUser,
     logout,

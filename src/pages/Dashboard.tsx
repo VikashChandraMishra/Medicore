@@ -23,6 +23,7 @@ import {
     YAxis,
 } from "recharts";
 import { NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
+import { mockDoctors } from "../data/doctors";
 import { mockPatients } from "../data/patients";
 import { notify } from "../utils/toast";
 import type { Note, Patient, Visit } from "../types/patient";
@@ -123,25 +124,33 @@ function getPatientDetailUrl(patient: Patient) {
     return `/patients?patientId=${encodeURIComponent(patient.id)}`;
 }
 
-function createTimelineItemFromVisit(patient: Patient, visit: Visit): TimelineItem {
+function getDoctorName(doctorId: string) {
+    return mockDoctors.find((doctor) => doctor.id === doctorId)?.displayName ?? "Unassigned";
+}
+
+function createTimelineItemFromVisit(patient: Patient, visit: Visit, index: number): TimelineItem {
+    const doctorName = getDoctorName(visit.doctorId);
+
     return {
-        id: visit.id,
+        id: `${patient.id}-visit-${index}`,
         patient,
         createdAt: visit.createdAt,
         type: "visit",
         title: `${getFullName(patient)} had ${formatLabel(visit.type)} visit`,
-        detail: `${visit.doctorName}${visit.diagnosis ? ` - ${visit.diagnosis}` : ""}`,
+        detail: `${doctorName}${visit.diagnosis ? ` - ${visit.diagnosis}` : ""}`,
         isUrgent: visit.type === VISIT_TYPES.EMERGENCY,
     };
 }
 
-function createTimelineItemFromNote(patient: Patient, note: Note): TimelineItem {
+function createTimelineItemFromNote(patient: Patient, note: Note, index: number): TimelineItem {
+    const doctorName = getDoctorName(note.doctorId);
+
     return {
-        id: note.id,
+        id: `${patient.id}-note-${index}`,
         patient,
         createdAt: note.createdAt,
         type: "note",
-        title: `Note added by ${note.createdBy}`,
+        title: `Note added by ${doctorName}`,
         detail: `${getFullName(patient)} - ${note.content}`,
         isUrgent: note.type === NOTE_TYPES.WARNING,
     };
@@ -168,9 +177,9 @@ function getCriticalAlerts() {
 
         patient.visits
             .filter((visit) => visit.type === VISIT_TYPES.EMERGENCY)
-            .forEach((visit) => {
+            .forEach((visit, index) => {
                 patientAlerts.push({
-                    id: visit.id,
+                    id: `${patient.id}-emergency-${index}`,
                     patient,
                     issue: visit.diagnosis ?? visit.symptoms[0] ?? "Emergency visit",
                     lastVisitAt: visit.date,
@@ -181,13 +190,13 @@ function getCriticalAlerts() {
 
         patient.notes
             .filter((note) => note.type === NOTE_TYPES.WARNING)
-            .forEach((note) => {
+            .forEach((note, index) => {
                 patientAlerts.push({
-                    id: note.id,
+                    id: `${patient.id}-warning-${index}`,
                     patient,
                     issue: note.content,
                     lastVisitAt: latestVisit?.date,
-                    source: `Warning by ${note.createdBy}`,
+                    source: `Warning by ${getDoctorName(note.doctorId)}`,
                     severity: "warning",
                 });
             });
@@ -243,8 +252,8 @@ export default function Dashboard() {
     const criticalAlerts = getCriticalAlerts();
     const activityFeed = mockPatients
         .flatMap((patient) => [
-            ...patient.visits.map((visit) => createTimelineItemFromVisit(patient, visit)),
-            ...patient.notes.map((note) => createTimelineItemFromNote(patient, note)),
+            ...patient.visits.map((visit, index) => createTimelineItemFromVisit(patient, visit, index)),
+            ...patient.notes.map((note, index) => createTimelineItemFromNote(patient, note, index)),
         ])
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, 8);
@@ -548,7 +557,7 @@ export default function Dashboard() {
                             Visits and notes sorted by created time
                         </p>
                     </div>
-                    <div className="max-h-[34rem] divide-y divide-gray-100 overflow-y-auto">
+                    <div className="max-h-136 divide-y divide-gray-100 overflow-y-auto">
                         {activityFeed.map((item) => (
                             <div key={item.id} className="flex gap-3 px-5 py-4">
                                 <span
@@ -597,7 +606,7 @@ export default function Dashboard() {
                         </Link>
                     </div>
 
-                    <div className="max-h-[31.5rem] overflow-auto">
+                    <div className="max-h-126 overflow-auto">
                         <table className="w-full min-w-160 text-left text-sm">
                             <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
                                 <tr>

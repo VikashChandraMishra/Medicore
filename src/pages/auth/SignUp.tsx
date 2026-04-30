@@ -66,14 +66,6 @@ export default function SignUp() {
                 return;
             }
 
-            if (
-                authService.getAuthErrorCode(err) ===
-                authService.USER_DOCUMENT_CREATE_FAILED
-            ) {
-                setAuthError(authService.getAuthErrorDetails(err));
-                return;
-            }
-
             setAuthError(authService.getAuthErrorDetails(err));
         } finally {
             setSubmitting(null);
@@ -100,14 +92,6 @@ export default function SignUp() {
             notify.success("Google account connected");
             navigate("/dashboard", { replace: true });
         } catch (err) {
-            if (
-                authService.getAuthErrorCode(err) ===
-                authService.USER_DOCUMENT_CREATE_FAILED
-            ) {
-                setAuthError(authService.getAuthErrorDetails(err));
-                return;
-            }
-
             setAuthError(authService.getAuthErrorDetails(err));
         } finally {
             setSubmitting(null);

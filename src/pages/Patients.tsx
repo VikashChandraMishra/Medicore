@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
+import { mockDoctors } from "../data/doctors";
 import { mockPatients } from "../data/patients";
 import type { Patient, Visit } from "../types/patient";
 
@@ -50,11 +51,17 @@ function getLatestVisit(patient: Patient) {
     return patient.visits[patient.visits.length - 1];
 }
 
+function getDoctorName(doctorId?: string) {
+    if (!doctorId) return "Unassigned";
+
+    return mockDoctors.find((doctor) => doctor.id === doctorId)?.displayName ?? "Unassigned";
+}
+
 function getDoctorMeta(patient: Patient) {
     const visit = getLatestVisit(patient);
 
     return {
-        name: visit?.doctorName ?? "Unassigned",
+        name: getDoctorName(visit?.doctorId),
         specialty: visit?.type ? formatLabel(visit.type) : "General",
     };
 }
@@ -542,7 +549,7 @@ export default function Patients() {
 
                 {selected && (
                     <div
-                        className={`fixed right-0 top-[73px] bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
+                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
                             ? "translate-x-0 opacity-100"
                             : "translate-x-full opacity-0"
                             }`}
@@ -604,9 +611,9 @@ export default function Patients() {
 
                             {visitView === "timeline" ? (
                                 <div className="relative space-y-4 pl-5 before:absolute before:left-1.5 before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-gray-200">
-                                    {selected.visits.map((visit) => (
+                                    {selected.visits.map((visit, index) => (
                                         <button
-                                            key={visit.id}
+                                            key={`${selected.id}-visit-${index}`}
                                             onClick={() => setSelectedVisit(visit)}
                                             className="relative w-full cursor-pointer rounded-xl bg-gray-50 p-3 text-left text-sm transition hover:bg-gray-100 active:scale-[0.99]"
                                         >
@@ -615,7 +622,7 @@ export default function Patients() {
                                                 <div>
                                                     <p className="font-medium text-gray-800">{visit.type}</p>
                                                     <p className="text-xs text-gray-500">
-                                                        {visit.doctorName}
+                                                        {getDoctorName(visit.doctorId)}
                                                     </p>
                                                 </div>
                                                 <p className="shrink-0 text-xs text-gray-500">
@@ -630,9 +637,9 @@ export default function Patients() {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {selected.visits.map((visit) => (
+                                    {selected.visits.map((visit, index) => (
                                         <button
-                                            key={visit.id}
+                                            key={`${selected.id}-visit-card-${index}`}
                                             onClick={() => setSelectedVisit(visit)}
                                             className="w-full cursor-pointer rounded-xl bg-gray-50 p-3 text-left text-sm transition hover:bg-gray-100 active:scale-[0.99]"
                                         >
@@ -640,7 +647,7 @@ export default function Patients() {
                                                 <p className="font-medium">{visit.type}</p>
                                                 <p className="text-gray-500">{formatDate(visit.date)}</p>
                                             </div>
-                                            <p className="text-gray-600">{visit.doctorName}</p>
+                                            <p className="text-gray-600">{getDoctorName(visit.doctorId)}</p>
                                             <p className="mt-2">{visit.summary}</p>
                                             {visit.diagnosis && (
                                                 <p className="mt-2">
@@ -673,8 +680,8 @@ export default function Patients() {
                                 <p className="text-sm text-gray-400">No notes</p>
                             ) : (
                                 <ul className="space-y-2">
-                                    {selected.notes.map((note) => (
-                                        <li key={note.id} className="text-sm bg-gray-100 p-2 rounded">
+                                    {selected.notes.map((note, index) => (
+                                        <li key={`${selected.id}-note-${index}`} className="text-sm bg-gray-100 p-2 rounded">
                                             <div className="flex justify-between gap-3">
                                                 <span className="font-medium">{note.type}</span>
                                                 <span className="text-gray-500">
@@ -683,7 +690,7 @@ export default function Patients() {
                                             </div>
                                             <p className="mt-1">{note.content}</p>
                                             <p className="mt-1 text-xs text-gray-500">
-                                                By {note.createdBy}
+                                                By {getDoctorName(note.doctorId)}
                                             </p>
                                         </li>
                                     ))}
@@ -695,7 +702,7 @@ export default function Patients() {
 
                 {selectedVisit && (
                     <div
-                        className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-950/35 px-4"
+                        className="fixed inset-0 z-70 flex items-center justify-center bg-gray-950/35 px-4"
                         onClick={() => setSelectedVisit(null)}
                     >
                         <div
@@ -711,7 +718,7 @@ export default function Patients() {
                                         {selectedVisit.type}
                                     </h3>
                                     <p className="text-sm text-gray-500">
-                                        {selectedVisit.doctorName}
+                                        {getDoctorName(selectedVisit.doctorId)}
                                     </p>
                                 </div>
                                 <button

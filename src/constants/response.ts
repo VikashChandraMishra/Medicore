@@ -1,8 +1,0 @@
-export const ERROR_CODES = {
-    UNKNOWN: "UNKNOWN",
-    VALIDATION: "VALIDATION",
-    AUTH: "AUTH",
-    NETWORK: "NETWORK",
-    NOT_FOUND: "NOT_FOUND",
-    PERMISSION: "PERMISSION",
-} as const;

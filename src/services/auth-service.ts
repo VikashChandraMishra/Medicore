@@ -44,7 +44,9 @@ const signUpWithEmail = async (email: string, password: string) => {
 
 const resendVerificationEmail = async () => {
     if (!auth.currentUser) {
-        throw new Error("No authenticated user found.");
+        throw Object.assign(new Error("No authenticated user found."), {
+            code: "auth/no-current-user",
+        });
     }
 
     await sendEmailVerification(auth.currentUser);

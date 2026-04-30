@@ -36,7 +36,7 @@ export default function AppLayout() {
                     <Sidebar isOpen={isSidebarOpen} onClose={toggleSidebar} />
                 )}
 
-                <main className="min-w-0 flex-1 overflow-y-auto transition-all duration-300">
+                <main className="relative z-0 min-w-0 flex-1 overflow-y-auto transition-all duration-300">
                     <div className="mx-auto h-full w-full max-w-7xl p-6">
                         <Outlet />
                     </div>

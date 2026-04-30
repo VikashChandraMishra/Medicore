@@ -18,7 +18,7 @@ export default function Sidebar({ isOpen, onClose }: Props) {
     return (
         <aside
             className={`
-                h-full shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/95 backdrop-blur
+                relative z-50 h-full shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/95 backdrop-blur
                 transition-all duration-300 ease-in-out
                 ${isOpen ? "w-64 px-4 py-5" : "w-0 p-0 overflow-hidden"}
             `}

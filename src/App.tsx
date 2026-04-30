@@ -11,7 +11,7 @@ function App() {
         position="top-right"
         toastOptions={{
           classNames: {
-            toast: "rounded-md border border-gray-200 bg-white text-gray-800 shadow-lg",
+            toast: "rounded-md border border-gray-200 bg-white text-gray-800",
             title: "text-sm font-semibold text-gray-950",
             description: "text-sm text-gray-500",
             success: "border-l-4 border-l-emerald-600",

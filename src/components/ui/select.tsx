@@ -49,7 +49,7 @@ export default function Select({
                 aria-label={ariaLabel}
                 aria-expanded={isOpen}
                 onClick={() => setIsOpen((open) => !open)}
-                className="flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-left text-sm text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-[0.99] focus-visible:border-[#0b1f4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f4d]/10"
+                className="flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-left text-sm text-gray-800 transition hover:bg-gray-50 active:scale-[0.99] focus-visible:border-[#0b1f4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f4d]/10"
             >
                 <span className="truncate">{selected?.label}</span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
@@ -58,7 +58,7 @@ export default function Select({
             {isOpen && (
                 <div
                     className={cn(
-                        "absolute right-0 z-30 mt-2 max-h-72 w-full min-w-44 overflow-auto rounded-xl border border-gray-200 bg-white p-1 text-sm shadow-lg",
+                        "absolute right-0 z-30 mt-2 max-h-72 w-full min-w-44 overflow-auto rounded-xl border border-gray-200 bg-white p-1 text-sm",
                         menuClassName,
                     )}
                 >

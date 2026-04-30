@@ -326,7 +326,7 @@ export default function Dashboard() {
 
                 <button
                     onClick={handleSimulateEmergencyAlert}
-                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[#0b1f4d] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#102a63] active:scale-[0.98]"
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[#0b1f4d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#102a63] active:scale-[0.98]"
                 >
                     <BellRing className="h-4 w-4" />
                     Simulate Emergency Alert
@@ -334,7 +334,7 @@ export default function Dashboard() {
             </div>
 
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-5">
                     <div className="mb-5 flex items-center justify-between">
                         <span className="rounded-md bg-blue-50 p-2 text-[#0b1f4d]">
                             <Users className="h-5 w-5" />
@@ -347,7 +347,7 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-5">
                     <div className="mb-5 flex items-center justify-between">
                         <span className="rounded-md bg-emerald-50 p-2 text-emerald-700">
                             <UserCheck className="h-5 w-5" />
@@ -360,7 +360,7 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <div className="rounded-lg border border-red-100 bg-red-50 p-5 shadow-sm">
+                <div className="rounded-lg border border-red-100 bg-red-50 p-5">
                     <div className="mb-5 flex items-center justify-between">
                         <span className="rounded-md bg-white p-2 text-red-700">
                             <HeartPulse className="h-5 w-5" />
@@ -373,7 +373,7 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-5">
                     <div className="mb-5 flex items-center justify-between">
                         <span className="rounded-md bg-sky-50 p-2 text-sky-700">
                             <CalendarClock className="h-5 w-5" />
@@ -388,7 +388,7 @@ export default function Dashboard() {
             </section>
 
             <section className="mt-6">
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
@@ -442,7 +442,7 @@ export default function Dashboard() {
             </section>
 
             <section className="mt-6">
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Visits in Last 7 Days
@@ -497,7 +497,7 @@ export default function Dashboard() {
             </section>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Recent Activity
@@ -537,7 +537,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">

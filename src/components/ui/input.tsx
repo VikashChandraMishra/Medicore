@@ -20,7 +20,7 @@ export default function Input({ className, inputClassName, leftIcon, ...props }:
             )}
             <input
                 className={cn(
-                    "flex h-12 w-full box-border items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 shadow-sm transition-colors placeholder:text-gray-500",
+                    "flex h-12 w-full box-border items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 transition-colors placeholder:text-gray-500",
                     "focus-visible:border-[#0b1f4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f4d]/10",
                     "disabled:cursor-not-allowed disabled:opacity-50",
                     Boolean(leftIcon) && "pl-11",

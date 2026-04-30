@@ -89,7 +89,7 @@ export default function Header() {
                             <button
                                 type="button"
                                 onClick={() => setIsMenuOpen((prev) => !prev)}
-                                className="grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-[#0b1f4d] text-sm font-semibold text-white shadow-sm transition hover:bg-[#102a63] active:scale-[0.96]"
+                                className="grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-[#0b1f4d] text-sm font-semibold text-white transition hover:bg-[#102a63] active:scale-[0.96]"
                                 aria-label="Open account menu"
                                 aria-expanded={isMenuOpen}
                             >
@@ -97,7 +97,7 @@ export default function Header() {
                             </button>
 
                             {isMenuOpen && (
-                                <div className="absolute right-0 top-12 z-70 w-72 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 text-white shadow-2xl">
+                                <div className="absolute right-0 top-12 z-70 w-72 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 text-white">
                                     <div className="px-4 py-3">
                                         <p className="truncate text-base font-semibold">
                                             {displayName}

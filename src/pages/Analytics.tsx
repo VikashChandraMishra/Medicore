@@ -293,7 +293,7 @@ export default function Analytics() {
                     </p>
                 </div>
 
-                <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm sm:grid-cols-3">
+                <div className="grid gap-3 rounded-lg border border-gray-200 bg-white p-3 sm:grid-cols-3">
                     <Select
                         value={dateRange}
                         options={dateOptions}
@@ -315,7 +315,7 @@ export default function Analytics() {
                 </div>
             </div>
 
-            <section className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm">
+            <section className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600">
                 <span className="inline-flex items-center gap-2">
                     <Users className="h-4 w-4 text-[#0b1f4d]" />
                     {filteredPatients.length} patients
@@ -338,7 +338,7 @@ export default function Analytics() {
             </section>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-2">
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Time-Based Trends
@@ -391,7 +391,7 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Visit Type Distribution
@@ -440,7 +440,7 @@ export default function Analytics() {
             </section>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-2">
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Condition Insights
@@ -473,7 +473,7 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">Demographics</h2>
                         <p className="text-sm text-gray-500">Age buckets and gender split</p>
@@ -520,7 +520,7 @@ export default function Analytics() {
             </section>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
@@ -575,7 +575,7 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
@@ -625,7 +625,7 @@ export default function Analytics() {
                 </div>
             </section>
 
-            <div className="mt-6 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500 shadow-sm">
+            <div className="mt-6 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
                 <SlidersHorizontal className="h-4 w-4 text-[#0b1f4d]" />
                 Filters update charts, counts, condition rankings, demographics, insurance, and risk lists.
             </div>

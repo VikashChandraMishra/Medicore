@@ -11,7 +11,7 @@ export default function Sidebar({ isOpen, onClose }: Props) {
         [
             "cursor-pointer rounded-md px-3 py-2 font-medium transition-colors active:scale-[0.98]",
             isActive
-                ? "bg-white text-gray-800 shadow-sm ring-1 ring-gray-200"
+                ? "bg-white text-gray-800 ring-1 ring-gray-200"
                 : "text-gray-500 hover:bg-white/70 hover:text-gray-800",
         ].join(" ");
 

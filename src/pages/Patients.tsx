@@ -476,7 +476,7 @@ export default function Patients() {
                             type="button"
                             onClick={clearAllFilters}
                             disabled={!hasActiveFilters}
-                            className="h-9 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="h-9 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             Clear all
                         </button>
@@ -529,9 +529,9 @@ export default function Patients() {
                                     <div
                                         key={patient.id}
                                         onClick={() => togglePatientSelection(patient)}
-                                        className={`cursor-pointer rounded-lg p-4 shadow-sm ring-1 ring-gray-200 transition hover:shadow-md active:scale-[0.99] ${isSelected
+                                        className={`cursor-pointer rounded-lg p-4 ring-1 ring-gray-200 transition active:scale-[0.99] ${isSelected
                                             ? "bg-[#0b1f4d] text-white"
-                                            : "bg-white text-gray-800"
+                                            : "bg-white text-gray-800 hover:bg-gray-50 hover:text-[#0b1f4d]"
                                             }`}
                                     >
                                         <div className="mb-3 flex items-center justify-between gap-3">
@@ -577,7 +577,7 @@ export default function Patients() {
                                     type="button"
                                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                     disabled={safeCurrentPage === 1}
-                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                                     aria-label="Previous page"
                                 >
                                     <ChevronLeft className="h-4 w-4" />
@@ -603,7 +603,7 @@ export default function Patients() {
                                     type="button"
                                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                     disabled={safeCurrentPage === totalPages}
-                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                                     aria-label="Next page"
                                 >
                                     <ChevronRight className="h-4 w-4" />
@@ -613,7 +613,7 @@ export default function Patients() {
                         </div>
                         </>
                     ) : (
-                        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
+                        <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200">
                         <div className="max-h-180 overflow-auto">
                             <table className="w-full min-w-245 border-collapse text-left text-sm">
                                 <thead className="sticky top-0 z-0 bg-white">
@@ -758,7 +758,7 @@ export default function Patients() {
                 {selected && (
                     <div
                         ref={detailsRef}
-                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl transition-all duration-300 ease-out ${isDetailsOpen
+                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 transition-all duration-300 ease-out ${isDetailsOpen
                             ? "translate-x-0 opacity-100"
                             : "translate-x-full opacity-0"
                             }`}
@@ -827,7 +827,7 @@ export default function Patients() {
                                             onClick={() => setSelectedVisit(visit)}
                                             className="relative w-full cursor-pointer rounded-xl bg-gray-50 p-3 text-left text-sm transition hover:bg-gray-100 active:scale-[0.99]"
                                         >
-                                            <span className="absolute -left-5 top-4 h-3 w-3 rounded-full border-2 border-white bg-[#0b1f4d] shadow" />
+                                            <span className="absolute -left-5 top-4 h-3 w-3 rounded-full border-2 border-white bg-[#0b1f4d]" />
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>
                                                     <p className="font-medium text-gray-800">{visit.type}</p>

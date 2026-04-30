@@ -1,21 +1,17 @@
 import {
     Activity,
-    CalendarDays,
     Check,
     ChevronLeft,
     ChevronRight,
-    Clock3,
     FileText,
-    Filter,
     LayoutGrid,
     List,
     MapPin,
-    MoreHorizontal,
     MoreVertical,
     Search,
-    ShieldCheck,
-    UserRound,
-    UsersRound,
+    Stethoscope,
+    Thermometer,
+    UserRound
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -31,6 +27,7 @@ const LIST_PAGE_SIZE = 10;
 const GRID_PAGE_SIZE = 8;
 
 const SORT_OPTIONS = {
+    NONE: "NONE",
     NAME_ASC: "NAME_ASC",
     AGE_ASC: "AGE_ASC",
     AGE_DESC: "AGE_DESC",
@@ -110,18 +107,18 @@ function getStableRoomNumber(patient: Patient) {
 }
 
 function getStatusSoftClass(status: PatientStatus) {
-    if (status === PATIENT_STATUS.ACTIVE) return "bg-green-50 text-green-700";
-    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-50 text-red-700";
-    return "bg-amber-50 text-amber-700";
+    if (status === PATIENT_STATUS.ACTIVE) return "bg-green-700";
+    if (status === PATIENT_STATUS.CRITICAL) return "bg-red-700";
+    return "bg-amber-700";
 }
 
 function StatusBadge({ status, isSelected = false }: { status: PatientStatus; isSelected?: boolean }) {
     return (
         <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium ${isSelected
             ? "bg-white text-[#0b1f4d]"
-            : getStatusSoftClass(status)
+            : `text-white ${getStatusSoftClass(status)}`
             }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-[#0b1f4d]" : "bg-current"}`} />
+            <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-current" : "bg-white"}`} />
             {formatLabel(status)}
         </span>
     );
@@ -165,15 +162,15 @@ export default function Patients() {
     const [roomFilter, setRoomFilter] = useState("all");
     const [minAgeFilter, setMinAgeFilter] = useState("");
     const [maxAgeFilter, setMaxAgeFilter] = useState("");
-    const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS.NAME_ASC);
+    const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS.NONE);
     const [selected, setSelected] = useState<Patient | null>(null);
     const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [showMoreFilters, setShowMoreFilters] = useState(false);
     const [visitView, setVisitView] = useState<"timeline" | "cards">("timeline");
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const detailsRef = useRef<HTMLDivElement | null>(null);
+    const patientSelectionRef = useRef<HTMLDivElement | null>(null);
     const closeTimerRef = useRef<number | null>(null);
 
     const debouncedSearch = useDebounce(search);
@@ -209,38 +206,13 @@ export default function Patients() {
         }),
     ];
     const sortOptions = [
+        { label: "No Sort", value: SORT_OPTIONS.NONE },
         { label: "Name A-Z", value: SORT_OPTIONS.NAME_ASC },
         { label: "Age low-high", value: SORT_OPTIONS.AGE_ASC },
         { label: "Age high-low", value: SORT_OPTIONS.AGE_DESC },
         { label: "Recent visit", value: SORT_OPTIONS.LAST_VISIT_DESC },
         { label: "Oldest visit", value: SORT_OPTIONS.LAST_VISIT_ASC },
         { label: "Room number", value: SORT_OPTIONS.ROOM_ASC },
-    ];
-    const patientStats = [
-        {
-            label: "Critical",
-            value: mockPatients.filter((patient) => patient.status === PATIENT_STATUS.CRITICAL).length,
-            icon: Activity,
-            iconClass: "bg-red-50 text-red-600",
-        },
-        {
-            label: "Active",
-            value: mockPatients.filter((patient) => patient.status === PATIENT_STATUS.ACTIVE).length,
-            icon: ShieldCheck,
-            iconClass: "bg-green-50 text-green-700",
-        },
-        {
-            label: "Inactive",
-            value: mockPatients.filter((patient) => patient.status === PATIENT_STATUS.INACTIVE).length,
-            icon: Clock3,
-            iconClass: "bg-amber-50 text-amber-600",
-        },
-        {
-            label: "Total Patients",
-            value: mockPatients.length,
-            icon: UsersRound,
-            iconClass: "bg-blue-50 text-[#0b1f4d]",
-        },
     ];
     const ageFilterError = getAgeFilterError(minAgeFilter, maxAgeFilter);
     const hasActiveFilters =
@@ -249,7 +221,8 @@ export default function Patients() {
         doctorFilter !== "all" ||
         roomFilter !== "all" ||
         minAgeFilter.trim() !== "" ||
-        maxAgeFilter.trim() !== "";
+        maxAgeFilter.trim() !== "" ||
+        sortBy !== SORT_OPTIONS.NONE;
 
     const clearAllFilters = () => {
         setSearch("");
@@ -258,6 +231,7 @@ export default function Patients() {
         setRoomFilter("all");
         setMinAgeFilter("");
         setMaxAgeFilter("");
+        setSortBy(SORT_OPTIONS.NONE);
     };
 
     useEffect(() => {
@@ -299,7 +273,7 @@ export default function Patients() {
         }, 250);
     };
 
-    const openDetails = (patient: Patient) => {
+    const togglePatientSelection = (patient: Patient) => {
         if (selected?.id === patient.id && isDetailsOpen) {
             closeDetails();
             return;
@@ -324,7 +298,11 @@ export default function Patients() {
         const handlePointerDown = (event: MouseEvent) => {
             if (!selected || !isDetailsOpen || selectedVisit) return;
 
-            if (!detailsRef.current?.contains(event.target as Node)) {
+            const target = event.target as Node;
+            if (
+                !detailsRef.current?.contains(target) &&
+                !patientSelectionRef.current?.contains(target)
+            ) {
                 closeDetails();
             }
         };
@@ -379,6 +357,8 @@ export default function Patients() {
     }, [ageFilterError, debouncedSearch, doctorFilter, maxAgeFilter, minAgeFilter, roomFilter, statusFilter]);
 
     const sortedPatients = useMemo(() => {
+        if (sortBy === SORT_OPTIONS.NONE) return filtered;
+
         return [...filtered].sort((a, b) => {
             if (sortBy === SORT_OPTIONS.AGE_ASC) return a.age - b.age;
             if (sortBy === SORT_OPTIONS.AGE_DESC) return b.age - a.age;
@@ -417,18 +397,18 @@ export default function Patients() {
     return (
         <div className="relative min-h-full bg-gray-50 pb-8">
             <div className="max-w-7xl mx-auto">
-                <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-gray-950">Patients</h1>
-                        <p className="text-sm text-gray-500">
-                            Manage and monitor patient health records
-                        </p>
-                    </div>
+                <div className="my-2">
+                    <h1 className="text-2xl font-semibold text-gray-950">Patients</h1>
+                    <p className="text-sm text-gray-500">
+                        Manage and monitor patient health records
+                    </p>
+                </div>
 
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="mb-4">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Input
                             placeholder="Search patients..."
-                            className="h-9 w-42 rounded-lg"
+                            className="w-42 [&_input]:h-9 [&_input]:rounded-lg"
                             leftIcon={<Search className="h-4 w-4" />}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -452,20 +432,37 @@ export default function Patients() {
                             ariaLabel="Filter by doctor"
                         />
 
-                        <button
-                            type="button"
-                            onClick={() => setShowMoreFilters((open) => !open)}
-                            className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 px-3 text-sm font-medium shadow-sm transition active:scale-[0.98] ${showMoreFilters
-                                ? "bg-[#0b1f4d] text-white"
-                                : "bg-white text-gray-700 hover:bg-gray-50"
-                                }`}
-                            aria-label="More filters"
-                            aria-expanded={showMoreFilters}
-                            title="More filters"
-                        >
-                            <Filter className="h-4 w-4" />
-                            More
-                        </button>
+                        <Select
+                            className="w-32 [&_button]:h-9 [&_button]:rounded-lg"
+                            value={roomFilter}
+                            options={roomSelectOptions}
+                            onValueChange={setRoomFilter}
+                            ariaLabel="Filter by room number"
+                        />
+
+                        <Input
+                            type="number"
+                            min={0}
+                            max={120}
+                            step={1}
+                            value={minAgeFilter}
+                            onChange={(e) => setMinAgeFilter(e.target.value)}
+                            placeholder="Min age"
+                            className="w-28 [&_input]:h-9 [&_input]:rounded-lg"
+                            inputClassName={ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}
+                        />
+
+                        <Input
+                            type="number"
+                            min={0}
+                            max={120}
+                            step={1}
+                            value={maxAgeFilter}
+                            onChange={(e) => setMaxAgeFilter(e.target.value)}
+                            placeholder="Max age"
+                            className="w-28 [&_input]:h-9 [&_input]:rounded-lg"
+                            inputClassName={ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}
+                        />
 
                         <Select
                             className="w-39 [&_button]:h-9 [&_button]:rounded-lg"
@@ -503,83 +500,27 @@ export default function Patients() {
                             </button>
                         </div>
                     </div>
+
+                    {ageFilterError && (
+                        <p className="mt-2 text-sm text-red-600">
+                            {ageFilterError}
+                        </p>
+                    )}
                 </div>
 
-                <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {patientStats.map((stat) => {
-                        const Icon = stat.icon;
-
-                        return (
-                            <div
-                                key={stat.label}
-                                className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-                            >
-                                <span className={`grid h-12 w-12 place-items-center rounded-xl ${stat.iconClass}`}>
-                                    <Icon className="h-6 w-6" />
-                                </span>
-                                <div>
-                                    <p className="text-xl font-semibold text-gray-950">{stat.value}</p>
-                                    <p className="text-sm text-gray-500">{stat.label}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </section>
-
-                {showMoreFilters && (
-                    <div className="mb-6 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Select
-                                className="w-28 [&_button]:h-9 [&_button]:rounded-lg"
-                                value={roomFilter}
-                                options={roomSelectOptions}
-                                onValueChange={setRoomFilter}
-                                ariaLabel="Filter by room number"
-                            />
-
-                            <Input
-                                type="number"
-                                min={0}
-                                max={120}
-                                step={1}
-                                value={minAgeFilter}
-                                onChange={(e) => setMinAgeFilter(e.target.value)}
-                                placeholder="Min age"
-                                className={`h-9 w-30 rounded-lg [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`}
-                            />
-
-                            <Input
-                                type="number"
-                                min={0}
-                                max={120}
-                                step={1}
-                                value={maxAgeFilter}
-                                onChange={(e) => setMaxAgeFilter(e.target.value)}
-                                placeholder="Max age"
-                                className={`h-9 w-30 rounded-lg [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`}
-                            />
-
+                <div ref={patientSelectionRef}>
+                    {loading ? (
+                        <div className="grid md:grid-cols-3 gap-4">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="h-40 bg-gray-200 animate-pulse rounded-xl" />
+                            ))}
                         </div>
-                        {ageFilterError && (
-                            <p className="mt-3 text-sm text-red-600">
-                                {ageFilterError}
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                {loading ? (
-                    <div className="grid md:grid-cols-3 gap-4">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="h-40 bg-gray-200 animate-pulse rounded-xl" />
-                        ))}
-                    </div>
-                ) : sortedPatients.length === 0 && view === "grid" ? (
-                    <div className="text-center py-20 text-gray-500">
-                        No patients found.
-                    </div>
-                ) : view === "grid" ? (
-                    <>
+                    ) : sortedPatients.length === 0 && view === "grid" ? (
+                        <div className="text-center py-20 text-gray-500">
+                            No patients found.
+                        </div>
+                    ) : view === "grid" ? (
+                        <>
                         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
                             {paginatedPatients.map((patient) => {
                                 const isSelected = selected?.id === patient.id && isDetailsOpen;
@@ -587,8 +528,8 @@ export default function Patients() {
                                 return (
                                     <div
                                         key={patient.id}
-                                        onClick={() => openDetails(patient)}
-                                        className={`cursor-pointer rounded-lg p-4 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${isSelected
+                                        onClick={() => togglePatientSelection(patient)}
+                                        className={`cursor-pointer rounded-lg p-4 shadow-sm ring-1 ring-gray-200 transition hover:shadow-md active:scale-[0.99] ${isSelected
                                             ? "bg-[#0b1f4d] text-white"
                                             : "bg-white text-gray-800"
                                             }`}
@@ -600,7 +541,7 @@ export default function Patients() {
                                             </span>
                                         </div>
 
-                                        <h2 className="text-[1.75rem] font-semibold leading-tight">{getFullName(patient)}</h2>
+                                        <p className="font-semibold leading-tight">{getFullName(patient)}</p>
                                         <p className={`mt-1 text-sm ${getSelectedTextClass(isSelected, "text-gray-600")}`}>
                                             {getPrimaryCondition(patient)}
                                         </p>
@@ -624,44 +565,6 @@ export default function Patients() {
                                             <MapPin className="h-4 w-4" />
                                             {patient.address.city}
                                         </p>
-
-                                        <div className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    openDetails(patient);
-                                                }}
-                                                className={`h-10 cursor-pointer rounded-md border px-4 text-sm font-semibold transition active:scale-[0.98] ${isSelected
-                                                    ? "border-white/60 bg-white text-[#0b1f4d]"
-                                                    : "border-gray-200 bg-white text-[#0b1f4d] hover:bg-gray-50"
-                                                    }`}
-                                            >
-                                                View
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(event) => event.stopPropagation()}
-                                                className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border transition active:scale-[0.98] ${isSelected
-                                                    ? "border-white/30 text-white hover:bg-white/10"
-                                                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                                                    }`}
-                                                aria-label="Open appointment calendar"
-                                            >
-                                                <CalendarDays className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(event) => event.stopPropagation()}
-                                                className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border transition active:scale-[0.98] ${isSelected
-                                                    ? "border-white/30 text-white hover:bg-white/10"
-                                                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                                                    }`}
-                                                aria-label="More patient actions"
-                                            >
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </button>
-                                        </div>
                                     </div>
                                 );
                             })}
@@ -708,9 +611,9 @@ export default function Patients() {
                             </div>
                             <div />
                         </div>
-                    </>
-                ) : (
-                    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
+                        </>
+                    ) : (
+                        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
                         <div className="max-h-180 overflow-auto">
                             <table className="w-full min-w-245 border-collapse text-left text-sm">
                                 <thead className="sticky top-0 z-0 bg-white">
@@ -744,7 +647,7 @@ export default function Patients() {
                                             return (
                                                 <tr
                                                     key={patient.id}
-                                                    onClick={() => openDetails(patient)}
+                                                    onClick={() => togglePatientSelection(patient)}
                                                     className={`cursor-pointer border-b border-gray-100 transition active:bg-gray-100 ${isSelected
                                                         ? "bg-[#0b1f4d] text-white hover:bg-[#0b1f4d]"
                                                         : "hover:bg-gray-50/80"
@@ -848,8 +751,9 @@ export default function Patients() {
                                 </button>
                             </div>
                         </div>
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
 
                 {selected && (
                     <div
@@ -1069,19 +973,28 @@ export default function Patients() {
                                         <p className="font-medium text-gray-800">Vitals</p>
                                         <div className="mt-2 grid gap-2 sm:grid-cols-3">
                                             <div className="rounded-xl bg-gray-50 p-3">
-                                                <p className="text-xs text-gray-500">Blood Pressure</p>
+                                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                                    <Stethoscope className="h-3.5 w-3.5" />
+                                                    Blood Pressure
+                                                </p>
                                                 <p className="font-medium text-gray-800">
                                                     {selectedVisit.vitals.bloodPressure ?? "N/A"}
                                                 </p>
                                             </div>
                                             <div className="rounded-xl bg-gray-50 p-3">
-                                                <p className="text-xs text-gray-500">Heart Rate</p>
+                                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                                    <Activity className="h-3.5 w-3.5" />
+                                                    Heart Rate
+                                                </p>
                                                 <p className="font-medium text-gray-800">
                                                     {selectedVisit.vitals.heartRate ?? "N/A"}
                                                 </p>
                                             </div>
                                             <div className="rounded-xl bg-gray-50 p-3">
-                                                <p className="text-xs text-gray-500">Temperature</p>
+                                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                                                    <Thermometer className="h-3.5 w-3.5" />
+                                                    Temperature
+                                                </p>
                                                 <p className="font-medium text-gray-800">
                                                     {selectedVisit.vitals.temperature ?? "N/A"} F
                                                 </p>

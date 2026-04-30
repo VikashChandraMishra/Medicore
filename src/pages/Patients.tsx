@@ -221,7 +221,7 @@ export default function Patients() {
     );
 
     return (
-        <div className="min-h-full bg-gray-50">
+        <div className="relative h-full bg-gray-50">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
                     <div>
@@ -262,7 +262,7 @@ export default function Patients() {
                             </>
                         )}
 
-                        <div className="flex border rounded-md overflow-hidden">
+                        <div className="flex overflow-hidden rounded-md border-2 border-[#0b1f4d] divide-x-2 divide-[#0b1f4d]">
                             <button
                                 aria-label="Grid view"
                                 title="Grid view"
@@ -702,11 +702,11 @@ export default function Patients() {
 
                 {selectedVisit && (
                     <div
-                        className="fixed inset-0 z-70 flex items-center justify-center bg-gray-950/35 px-4"
+                        className="absolute inset-0 z-40 flex items-center justify-center bg-gray-950/35 px-4"
                         onClick={() => setSelectedVisit(null)}
                     >
                         <div
-                            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                            className="max-h-[calc(100%-3rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="mb-5 flex items-start justify-between gap-4">

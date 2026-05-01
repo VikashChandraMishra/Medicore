@@ -30,7 +30,7 @@ import { mockDoctors } from "../data/doctors";
 import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
 import type { Note, Patient, Visit } from "../types/patient";
-import { getDoctorByEmail, getScopedPatientsForEmail } from "../utils/patient-scope";
+import { getDoctorByEmail, getScopedPatientsForEmail, getStaffByEmail } from "../utils/patient-scope";
 import { notify } from "../utils/toast";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -283,6 +283,9 @@ export default function Dashboard() {
     const [activeTab, setActiveTab] = useState<DashboardTab>("alerts");
     const showUserDirectory = isAdminEmail(user?.email);
     const currentDoctor = getDoctorByEmail(user?.email);
+    const currentStaff = getStaffByEmail(user?.email);
+    const currentProfile = currentDoctor ?? currentStaff;
+    const isStaffDashboard = Boolean(currentStaff);
     const scopedPatients = getScopedPatientsForEmail(user?.email);
     const operationalNow = getLatestActivityDate(scopedPatients);
     const lastSevenDaysStart = new Date(
@@ -294,10 +297,14 @@ export default function Dashboard() {
             setActiveTab("alerts");
         }
 
-        if (!currentDoctor && activeTab === "appointments") {
+        if (!currentDoctor && !currentStaff && activeTab === "appointments") {
             setActiveTab("alerts");
         }
-    }, [activeTab, currentDoctor, showUserDirectory]);
+
+        if (isStaffDashboard && activeTab !== "visits" && activeTab !== "appointments") {
+            setActiveTab("visits");
+        }
+    }, [activeTab, currentDoctor, currentStaff, isStaffDashboard, showUserDirectory]);
 
     const activePatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.ACTIVE,
@@ -334,36 +341,49 @@ export default function Dashboard() {
     const currentMonth = new Date();
     const calendarDays = getMonthCalendarDays(currentMonth);
     const dailyVisitTrend = getDailyVisitTrend(allVisits, operationalNow);
+    const visibleActiveTab =
+        isStaffDashboard && activeTab !== "visits" && activeTab !== "appointments"
+            ? "visits"
+            : activeTab;
     const dashboardTabs: Array<{ label: string; value: DashboardTab }> = [
-        { label: "Critical Alerts", value: "alerts" },
+        ...(isStaffDashboard ? [] : [{ label: "Critical Alerts", value: "alerts" as DashboardTab }]),
         { label: "Visits in Last 7 Days", value: "visits" },
-        { label: "Recent Activity", value: "activity" },
+        ...(isStaffDashboard ? [] : [{ label: "Recent Activity", value: "activity" as DashboardTab }]),
         ...(currentDoctor ? [{ label: "Upcoming Appointments", value: "appointments" as DashboardTab }] : []),
-        { label: "Patient Snapshot", value: "patients" },
+        ...(currentStaff ? [{ label: "Schedule Appointments", value: "appointments" as DashboardTab }] : []),
+        ...(isStaffDashboard ? [] : [{ label: "Patient Snapshot", value: "patients" as DashboardTab }]),
         ...(showUserDirectory ? [{ label: "Users", value: "users" as DashboardTab }] : []),
     ];
-    const dashboardMetrics = [
-        {
-            label: "Total Patients",
-            value: scopedPatients.length,
-            icon: Users,
-        },
-        {
-            label: "Active vs Inactive",
-            value: `${activePatients} / ${inactivePatients}`,
-            icon: UserCheck,
-        },
-        {
-            label: "Critical Patients",
-            value: criticalPatients,
-            icon: HeartPulse,
-        },
-        {
-            label: "Visits in Last 7 Days",
-            value: recentVisits.length,
-            icon: CalendarClock,
-        },
-    ];
+    const dashboardMetrics = isStaffDashboard
+        ? [
+            {
+                label: "Visits in Last 7 Days",
+                value: recentVisits.length,
+                icon: CalendarClock,
+            },
+        ]
+        : [
+            {
+                label: "Total Patients",
+                value: scopedPatients.length,
+                icon: Users,
+            },
+            {
+                label: "Active vs Inactive",
+                value: `${activePatients} / ${inactivePatients}`,
+                icon: UserCheck,
+            },
+            {
+                label: "Critical Patients",
+                value: criticalPatients,
+                icon: HeartPulse,
+            },
+            {
+                label: "Visits in Last 7 Days",
+                value: recentVisits.length,
+                icon: CalendarClock,
+            },
+        ];
 
     const handleSimulateEmergencyAlert = async () => {
         const criticalPatient =
@@ -445,22 +465,22 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {currentDoctor && (
+            {currentProfile && (
                 <section className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                                Doctor profile
+                                {currentStaff ? "Staff profile" : "Doctor profile"}
                             </p>
                             <h2 className="mt-1 text-xl font-semibold text-gray-950">
-                                {currentDoctor.displayName}
+                                {currentProfile.displayName}
                             </h2>
-                            <p className="mt-1 text-sm text-gray-500">{currentDoctor.email}</p>
+                            <p className="mt-1 text-sm text-gray-500">{currentProfile.email}</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <Badge tone="accent">{currentDoctor.id}</Badge>
-                            <Badge tone={currentDoctor.status === USER_STATUS.ACTIVE ? "green" : "amber"}>
-                                {formatLabel(currentDoctor.status)}
+                            <Badge tone="accent">{currentProfile.id}</Badge>
+                            <Badge tone={currentProfile.status === USER_STATUS.ACTIVE ? "green" : "amber"}>
+                                {formatLabel(currentProfile.status)}
                             </Badge>
                         </div>
                     </div>
@@ -486,7 +506,7 @@ export default function Dashboard() {
             <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
                 <div className="flex gap-1 overflow-x-auto border-b border-gray-100 p-2" role="tablist" aria-label="Dashboard sections">
                     {dashboardTabs.map((tab) => {
-                        const isActive = activeTab === tab.value;
+                        const isActive = visibleActiveTab === tab.value;
 
                         return (
                             <button
@@ -506,7 +526,7 @@ export default function Dashboard() {
                     })}
                 </div>
 
-                {activeTab === "alerts" && (
+                {visibleActiveTab === "alerts" && !isStaffDashboard && (
                     <>
                         <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                             <div>
@@ -545,7 +565,7 @@ export default function Dashboard() {
                     </>
                 )}
 
-                {activeTab === "visits" && (
+                {visibleActiveTab === "visits" && (
                     <>
                         <div className="border-b border-gray-100 px-5 py-4">
                             <h2 className="text-lg font-semibold text-gray-950">Visits in Last 7 Days</h2>
@@ -571,7 +591,7 @@ export default function Dashboard() {
                     </>
                 )}
 
-                {activeTab === "activity" && (
+                {visibleActiveTab === "activity" && !isStaffDashboard && (
                     <>
                         <div className="border-b border-gray-100 px-5 py-4">
                             <h2 className="text-lg font-semibold text-gray-950">Recent Activity</h2>
@@ -602,11 +622,13 @@ export default function Dashboard() {
                     </>
                 )}
 
-                {activeTab === "appointments" && currentDoctor && (
+                {visibleActiveTab === "appointments" && (currentDoctor || currentStaff) && (
                     <>
                         <div className="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h2 className="text-lg font-semibold text-gray-950">Upcoming Appointments</h2>
+                                <h2 className="text-lg font-semibold text-gray-950">
+                                    {currentStaff ? "Schedule Appointments" : "Upcoming Appointments"}
+                                </h2>
                                 <p className="text-sm text-gray-500">{formatMonthYear(currentMonth)}</p>
                             </div>
                         </div>
@@ -653,7 +675,7 @@ export default function Dashboard() {
                     </>
                 )}
 
-                {activeTab === "patients" && (
+                {visibleActiveTab === "patients" && !isStaffDashboard && (
                     <>
                         <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                             <div>
@@ -739,7 +761,7 @@ export default function Dashboard() {
                     </>
                 )}
 
-                {activeTab === "users" && showUserDirectory && <UserDirectory embedded />}
+                {visibleActiveTab === "users" && showUserDirectory && <UserDirectory embedded />}
             </section>
         </div>
     );

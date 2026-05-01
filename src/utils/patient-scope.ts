@@ -1,9 +1,14 @@
 import { mockDoctors } from "../data/doctors";
 import { mockPatients } from "../data/patients";
+import { mockStaff } from "../data/staff";
 import type { Patient } from "../types/patient";
 
 export function getDoctorByEmail(email?: string | null) {
     return mockDoctors.find((doctor) => doctor.email === email);
+}
+
+export function getStaffByEmail(email?: string | null) {
+    return mockStaff.find((staff) => staff.email === email);
 }
 
 export function getPatientsForDoctor(doctorId: string, patients: Patient[] = mockPatients) {

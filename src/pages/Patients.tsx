@@ -732,7 +732,7 @@ export default function Patients() {
                 {selected && (
                     <div
                         ref={detailsRef}
-                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 transition-all duration-300 ease-out ${isDetailsOpen
+                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl ring-1 ring-gray-200/70 transition-all duration-300 ease-out ${isDetailsOpen
                             ? "translate-x-0 opacity-100"
                             : "translate-x-full opacity-0"
                             }`}

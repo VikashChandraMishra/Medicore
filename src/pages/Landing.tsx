@@ -33,6 +33,8 @@ const qualitySignals = [
     "Service worker notifications",
 ];
 
+const readmeUrl = "https://github.com/VikashChandraMishra/Medicore/blob/main/README.md";
+
 export default function Landing() {
     return (
         <div className={`min-h-screen ${THEME.SITE_BACKGROUND} text-gray-800`}>
@@ -50,6 +52,19 @@ export default function Landing() {
                         A focused clinic operations interface for patient records,
                         appointments, analytics, and role-aware dashboards.
                     </p>
+
+                    <div className="mt-5 rounded-lg bg-white px-4 py-3 text-sm leading-6 text-gray-600 shadow-sm">
+                        Demo credentials are listed in the{" "}
+                        <a
+                            href={readmeUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-semibold text-[#0b1f4d] underline-offset-4 hover:underline"
+                        >
+                            repository README
+                        </a>
+                        . New user accounts cannot be created from the app.
+                    </div>
 
                     <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                         <Link

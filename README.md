@@ -34,6 +34,8 @@ The analytics page visualizes mocked patient data with charts and filters for da
 
 ## Demo Credentials
 
+New user accounts cannot be created from the app. Use one of the seeded demo accounts below.
+
 All seeded users use the same password:
 
 ```text

@@ -1,4 +1,3 @@
-import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore";
 import {
     Activity,
     AlertTriangle,
@@ -9,7 +8,6 @@ import {
     Stethoscope,
     UserCheck,
     Users,
-    X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -22,195 +20,47 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
+import AppointmentCalendar from "../components/dashboard/AppointmentCalendar";
+import AppointmentModal from "../components/dashboard/AppointmentModal";
 import UserDirectory from "../components/dashboard/UserDirectory";
 import Badge, { type BadgeTone } from "../components/ui/Badge";
-import CloseButton from "../components/ui/CloseButton";
 import DataTable from "../components/ui/DataTable";
-import Select from "../components/ui/Select";
-import { db } from "../config/firebase-config";
-import { COLLECTIONS } from "../constants/collections";
-import { NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
+import { PATIENT_STATUS } from "../constants/patient";
 import { THEME } from "../constants/theme";
 import { USER_STATUS } from "../constants/user";
 import { mockDoctors } from "../data/doctors";
-import { mockPatients } from "../data/patients";
 import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
+import {
+    deleteAppointment,
+    getAppointmentNotificationKey,
+    saveAppointment as saveAppointmentDocument,
+    subscribeToAppointments,
+} from "../services/appointment-service";
+import { getNotificationStatus, showServiceWorkerNotification } from "../services/notification-service";
 import type { Appointment } from "../types/appointment";
-import type { Note, Patient, Visit } from "../types/patient";
+import type { Patient } from "../types/patient";
+import { getMonthCalendarDays } from "../utils/calendar";
+import {
+    formatDateTime,
+    formatLongDate,
+    formatMonthYear,
+    formatRelativeTime,
+    formatShortDate,
+} from "../utils/date";
+import { formatLabel } from "../utils/format";
+import {
+    getActivityFeed,
+    getCriticalAlerts,
+    getDailyVisitTrend,
+    getLatestActivityDate,
+    LAST_SEVEN_DAYS_IN_MS,
+} from "../utils/dashboard-data";
 import { getDoctorByEmail, getScopedPatientsForEmail, getStaffByEmail } from "../utils/patient-scope";
+import { getFullName, getPatientName } from "../utils/people";
 import { notify } from "../utils/toast";
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const LAST_SEVEN_DAYS_IN_MS = 7 * DAY_IN_MS;
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-type TimelineItem = {
-    id: string;
-    patient: Patient;
-    createdAt: Date;
-    type: "visit" | "note";
-    title: string;
-    detail: string;
-    isUrgent: boolean;
-};
-
-type CriticalAlert = {
-    id: string;
-    patient: Patient;
-    issue: string;
-    lastVisitAt?: Date;
-    source: string;
-    severity: "critical" | "warning";
-};
-
 type DashboardTab = "alerts" | "visits" | "activity" | "appointments" | "patients" | "users";
-
-type CalendarDay = {
-    date: Date;
-    isCurrentMonth: boolean;
-    isPast: boolean;
-    isToday: boolean;
-};
-
-function getFullName(patient: Patient) {
-    return `${patient.firstName} ${patient.lastName}`;
-}
-
-function getLatestVisit(patient: Patient) {
-    return [...patient.visits].sort((a, b) => b.date.getTime() - a.date.getTime())[0];
-}
-
-function getLatestActivityDate(patients: Patient[]) {
-    const dates = patients.flatMap((patient) => [
-        patient.updatedAt,
-        patient.createdAt,
-        ...(patient.lastVisitAt ? [patient.lastVisitAt] : []),
-        ...patient.visits.map((visit) => visit.createdAt),
-        ...patient.notes.map((note) => note.createdAt),
-    ]);
-
-    if (dates.length === 0) return new Date();
-
-    return new Date(Math.max(...dates.map((date) => date.getTime())));
-}
-
-function formatLabel(value: string) {
-    return value.charAt(0) + value.slice(1).toLowerCase();
-}
-
-function formatShortDate(date?: Date) {
-    if (!date) return "No visits";
-
-    return new Intl.DateTimeFormat("en", {
-        day: "2-digit",
-        month: "short",
-    }).format(date);
-}
-
-function getDateKey(date: Date) {
-    return [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, "0"),
-        String(date.getDate()).padStart(2, "0"),
-    ].join("-");
-}
-
-function formatDateTime(date?: Date) {
-    if (!date) return "No visits";
-
-    return new Intl.DateTimeFormat("en", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(date);
-}
-
-function formatMonthYear(date: Date) {
-    return new Intl.DateTimeFormat("en", {
-        month: "long",
-        year: "numeric",
-    }).format(date);
-}
-
-function formatLongDate(date: Date) {
-    return new Intl.DateTimeFormat("en", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-    }).format(date);
-}
-
-function getMonthCalendarDays(date: Date) {
-    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    const calendarStart = new Date(monthStart);
-    calendarStart.setDate(monthStart.getDate() - monthStart.getDay());
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const totalDays = Math.ceil((monthEnd.getDate() + monthStart.getDay()) / 7) * 7;
-
-    return Array.from({ length: totalDays }).map((_, index): CalendarDay => {
-        const day = new Date(calendarStart);
-        day.setDate(calendarStart.getDate() + index);
-
-        const normalizedDay = new Date(day);
-        normalizedDay.setHours(0, 0, 0, 0);
-
-        return {
-            date: day,
-            isCurrentMonth: day.getMonth() === date.getMonth(),
-            isPast: normalizedDay < today,
-            isToday: normalizedDay.getTime() === today.getTime(),
-        };
-    });
-}
-
-function isAppointment(value: unknown): value is Appointment {
-    if (!value || typeof value !== "object") return false;
-
-    const appointment = value as Record<string, unknown>;
-
-    return (
-        typeof appointment.patientId === "string" &&
-        typeof appointment.doctorId === "string" &&
-        typeof appointment.appointmentDate === "string"
-    );
-}
-
-function getNotificationStatus(permission: NotificationPermission) {
-    if (permission === "granted") return { label: "Notifications enabled", tone: "green" as const };
-    if (permission === "denied") return { label: "Notifications blocked", tone: "red" as const };
-    return { label: "Notifications not enabled", tone: "amber" as const };
-}
-
-async function showServiceWorkerNotification(title: string, options: NotificationOptions) {
-    if (!("serviceWorker" in navigator)) {
-        throw new Error("Service worker notifications are unavailable.");
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-
-    await registration.showNotification(title, {
-        ...options,
-        requireInteraction: true,
-    });
-}
-
-function formatRelativeTime(date: Date, now: Date) {
-    const diff = Math.max(0, now.getTime() - date.getTime());
-    const hours = Math.floor(diff / (60 * 60 * 1000));
-
-    if (hours < 1) return "Just now";
-    if (hours < 24) return `${hours}h ago`;
-
-    const days = Math.floor(hours / 24);
-    if (days === 1) return "Yesterday";
-    return `${days}d ago`;
-}
 
 function getStatusTone(status: Patient["status"]): BadgeTone {
     if (status === PATIENT_STATUS.CRITICAL) return "red";
@@ -220,114 +70,6 @@ function getStatusTone(status: Patient["status"]): BadgeTone {
 
 function getPatientDetailUrl(patient: Patient) {
     return `/patients?patientId=${encodeURIComponent(patient.id)}`;
-}
-
-function getDoctorName(doctorId: string) {
-    return mockDoctors.find((doctor) => doctor.id === doctorId)?.displayName ?? "Unassigned";
-}
-
-function getPatientName(patientId: string) {
-    const patient = mockPatients.find((item) => item.id === patientId);
-
-    return patient ? getFullName(patient) : "Unknown patient";
-}
-
-function createTimelineItemFromVisit(patient: Patient, visit: Visit, index: number): TimelineItem {
-    const doctorName = getDoctorName(visit.doctorId);
-
-    return {
-        id: `${patient.id}-visit-${index}`,
-        patient,
-        createdAt: visit.createdAt,
-        type: "visit",
-        title: `${getFullName(patient)} had ${formatLabel(visit.type)} visit`,
-        detail: `${doctorName}${visit.diagnosis ? ` - ${visit.diagnosis}` : ""}`,
-        isUrgent: visit.type === VISIT_TYPES.EMERGENCY,
-    };
-}
-
-function createTimelineItemFromNote(patient: Patient, note: Note, index: number): TimelineItem {
-    const doctorName = getDoctorName(note.doctorId);
-
-    return {
-        id: `${patient.id}-note-${index}`,
-        patient,
-        createdAt: note.createdAt,
-        type: "note",
-        title: `Note added by ${doctorName}`,
-        detail: `${getFullName(patient)} - ${note.content}`,
-        isUrgent: note.type === NOTE_TYPES.WARNING,
-    };
-}
-
-function getCriticalAlerts(patients: Patient[]) {
-    const alerts = patients.flatMap((patient) => {
-        const latestVisit = getLatestVisit(patient);
-        const patientAlerts: CriticalAlert[] = [];
-
-        if (patient.status === PATIENT_STATUS.CRITICAL) {
-            patientAlerts.push({
-                id: `${patient.id}-status`,
-                patient,
-                issue:
-                    latestVisit?.diagnosis ??
-                    patient.chronicConditions[0] ??
-                    "Critical patient status",
-                lastVisitAt: latestVisit?.date,
-                source: "Critical status",
-                severity: "critical",
-            });
-        }
-
-        patient.visits
-            .filter((visit) => visit.type === VISIT_TYPES.EMERGENCY)
-            .forEach((visit, index) => {
-                patientAlerts.push({
-                    id: `${patient.id}-emergency-${index}`,
-                    patient,
-                    issue: visit.diagnosis ?? visit.symptoms[0] ?? "Emergency visit",
-                    lastVisitAt: visit.date,
-                    source: "Emergency visit",
-                    severity: "critical",
-                });
-            });
-
-        patient.notes
-            .filter((note) => note.type === NOTE_TYPES.WARNING)
-            .forEach((note, index) => {
-                patientAlerts.push({
-                    id: `${patient.id}-warning-${index}`,
-                    patient,
-                    issue: note.content,
-                    lastVisitAt: latestVisit?.date,
-                    source: `Warning by ${getDoctorName(note.doctorId)}`,
-                    severity: "warning",
-                });
-            });
-
-        return patientAlerts;
-    });
-
-    return alerts
-        .sort(
-            (a, b) =>
-                (b.lastVisitAt?.getTime() ?? 0) - (a.lastVisitAt?.getTime() ?? 0),
-        )
-        .slice(0, 6);
-}
-
-function getDailyVisitTrend(visits: { visit: Visit }[], endDate: Date) {
-    return Array.from({ length: 7 }).map((_, index) => {
-        const date = new Date(endDate);
-        date.setHours(0, 0, 0, 0);
-        date.setDate(date.getDate() - (6 - index));
-
-        return {
-            date: formatShortDate(date),
-            visits: visits.filter(({ visit }) => getDateKey(visit.date) === getDateKey(date))
-                .length,
-        };
-    });
 }
 
 export default function Dashboard() {
@@ -370,16 +112,8 @@ export default function Dashboard() {
     }, [activeTab, currentDoctor, currentStaff, isStaffDashboard, showUserDirectory]);
 
     useEffect(() => {
-        return onSnapshot(
-            collection(db, COLLECTIONS.APPOINTMENTS),
-            (snapshot) => {
-                const nextAppointments = snapshot.docs
-                    .map((appointmentDoc) => appointmentDoc.data())
-                    .filter(isAppointment)
-                    .sort((a, b) => a.appointmentDate.localeCompare(b.appointmentDate));
-
-                setAppointments(nextAppointments);
-            },
+        return subscribeToAppointments(
+            setAppointments,
             () => {
                 notify.error("Could not load appointments", {
                     description: "Check the Firestore connection and permissions.",
@@ -450,9 +184,7 @@ export default function Dashboard() {
         );
         const pendingNotifications = doctorAppointments.filter(
             (appointment) =>
-                !notifiedAppointmentIdsRef.current.has(
-                    `${appointment.doctorId}:${appointment.patientId}:${appointment.appointmentDate}`,
-                ),
+                !notifiedAppointmentIdsRef.current.has(getAppointmentNotificationKey(appointment)),
         );
 
         if (pendingNotifications.length === 0) return;
@@ -474,9 +206,7 @@ export default function Dashboard() {
             );
 
             pendingNotifications.forEach((appointment) => {
-                notifiedAppointmentIdsRef.current.add(
-                    `${appointment.doctorId}:${appointment.patientId}:${appointment.appointmentDate}`,
-                );
+                notifiedAppointmentIdsRef.current.add(getAppointmentNotificationKey(appointment));
             });
         };
 
@@ -505,13 +235,7 @@ export default function Dashboard() {
         patient.visits.map((visit) => ({ patient, visit })),
     );
     const criticalAlerts = getCriticalAlerts(scopedPatients);
-    const activityFeed = scopedPatients
-        .flatMap((patient) => [
-            ...patient.visits.map((visit, index) => createTimelineItemFromVisit(patient, visit, index)),
-            ...patient.notes.map((note, index) => createTimelineItemFromNote(patient, note, index)),
-        ])
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-        .slice(0, 8);
+    const activityFeed = getActivityFeed(scopedPatients);
     const patientSnapshot = [...scopedPatients]
         .sort(
             (a, b) =>
@@ -525,9 +249,6 @@ export default function Dashboard() {
     const visibleAppointments = currentDoctor
         ? appointments.filter((appointment) => appointment.doctorId === currentDoctor.id)
         : appointments;
-    const appointmentsByDate = new Map(
-        visibleAppointments.map((appointment) => [appointment.appointmentDate, appointment]),
-    );
     const selectedAppointment = selectedAppointmentDateKey
         ? appointments.find((appointment) => appointment.appointmentDate === selectedAppointmentDateKey)
         : undefined;
@@ -682,10 +403,7 @@ export default function Dashboard() {
         };
 
         try {
-            await setDoc(
-                doc(db, COLLECTIONS.APPOINTMENTS, selectedAppointmentDateKey),
-                nextAppointment,
-            );
+            await saveAppointmentDocument(nextAppointment);
             closeAppointmentModal();
         } catch {
             notify.error("Could not schedule appointment", {
@@ -696,7 +414,7 @@ export default function Dashboard() {
 
     const removeAppointment = async (dateKey: string) => {
         try {
-            await deleteDoc(doc(db, COLLECTIONS.APPOINTMENTS, dateKey));
+            await deleteAppointment(dateKey);
 
             if (selectedAppointmentDateKey === dateKey) {
                 closeAppointmentModal();
@@ -934,80 +652,13 @@ export default function Dashboard() {
                             </div>
                         </div>
                         <div className="px-5 py-4">
-                            <div className="overflow-hidden rounded-lg bg-white">
-                                <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
-                                    {WEEKDAYS.map((weekday) => (
-                                        <div key={weekday} className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            {weekday}
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-7">
-                                    {calendarDays.map((day) => {
-                                        const dayLabel = day.date.getDate();
-                                        const dayKey = getDateKey(day.date);
-                                        const appointment = appointmentsByDate.get(dayKey);
-                                        const canSchedule = Boolean(currentStaff && day.isCurrentMonth);
-
-                                        return (
-                                            <div
-                                                key={dayKey}
-                                                role={canSchedule ? "button" : undefined}
-                                                tabIndex={canSchedule ? 0 : undefined}
-                                                onClick={() => {
-                                                    if (canSchedule) {
-                                                        openAppointmentModal(dayKey);
-                                                    }
-                                                }}
-                                                onKeyDown={(event) => {
-                                                    if (!canSchedule || (event.key !== "Enter" && event.key !== " ")) return;
-                                                    event.preventDefault();
-                                                    openAppointmentModal(dayKey);
-                                                }}
-                                                className={`relative min-h-28 border-b border-r border-gray-200 p-2 last:border-r-0 sm:min-h-32 ${canSchedule ? `cursor-pointer transition ${THEME.HOVER_BACKGROUND}` : ""} ${day.isPast
-                                                    ? "bg-gray-100 text-gray-400"
-                                                    : day.isCurrentMonth
-                                                        ? "bg-white text-gray-800"
-                                                        : "bg-gray-50 text-gray-300"
-                                                    }`}
-                                            >
-                                                {currentStaff && appointment && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            removeAppointment(dayKey);
-                                                        }}
-                                                        className="absolute right-2 top-2 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-white text-gray-500 shadow-sm transition hover:bg-red-50 hover:text-red-600 active:scale-[0.95]"
-                                                        aria-label="Remove appointment"
-                                                        title="Remove appointment"
-                                                    >
-                                                        <X className="h-3.5 w-3.5" />
-                                                    </button>
-                                                )}
-                                                <div className="flex justify-start">
-                                                    <span
-                                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium ${day.isToday
-                                                            ? "bg-[#0b1f4d] text-white"
-                                                            : ""
-                                                            }`}
-                                                    >
-                                                        {dayLabel}
-                                                    </span>
-                                                </div>
-                                                {appointment && (
-                                                    <div className="mt-3 rounded-md bg-[#0b1f4d]/5 p-2 text-xs text-[#0b1f4d]">
-                                                        <p className="truncate font-semibold">{getPatientName(appointment.patientId)}</p>
-                                                        {currentStaff && (
-                                                            <p className="mt-1 truncate text-[#0b1f4d]/70">{getDoctorName(appointment.doctorId)}</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            <AppointmentCalendar
+                                appointments={visibleAppointments}
+                                calendarDays={calendarDays}
+                                canSchedule={Boolean(currentStaff)}
+                                onOpenAppointment={openAppointmentModal}
+                                onRemoveAppointment={removeAppointment}
+                            />
                         </div>
                     </>
                 )}
@@ -1102,90 +753,20 @@ export default function Dashboard() {
             </section>
 
             {selectedAppointmentDateKey && currentStaff && selectedAppointmentDate && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center px-4"
-                    onClick={closeAppointmentModal}
-                >
-                    <div
-                        className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div>
-                                <h2 className="text-lg font-semibold text-gray-950">
-                                    Schedule Appointment
-                                </h2>
-                                <p className="text-sm text-gray-500">
-                                    {formatLongDate(selectedAppointmentDate)}
-                                </p>
-                            </div>
-                            <CloseButton
-                                onClick={closeAppointmentModal}
-                                label="Close appointment scheduler"
-                            />
-                        </div>
-
-                        {selectedAppointment && isEditingExistingAppointment && (
-                            <div className="mt-4 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                                Current: {getPatientName(selectedAppointment.patientId)} with {getDoctorName(selectedAppointment.doctorId)}
-                            </div>
-                        )}
-
-                        <div className="mt-5 space-y-4">
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                                    Patient
-                                </label>
-                                <Select
-                                    value={appointmentPatientId}
-                                    options={patientOptions}
-                                    onValueChange={setAppointmentPatientId}
-                                    ariaLabel="Select appointment patient"
-                                    menuClassName="left-0 right-auto"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                                    Doctor
-                                </label>
-                                <Select
-                                    value={appointmentDoctorId}
-                                    options={doctorOptions}
-                                    onValueChange={setAppointmentDoctorId}
-                                    ariaLabel="Select appointment doctor"
-                                    menuClassName="left-0 right-auto"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                            {selectedAppointment && isEditingExistingAppointment && (
-                                <button
-                                    type="button"
-                                    onClick={() => removeAppointment(selectedAppointmentDateKey)}
-                                    className="cursor-pointer rounded-md border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 active:scale-[0.98]"
-                                >
-                                    Remove
-                                </button>
-                            )}
-                            <button
-                                type="button"
-                                onClick={closeAppointmentModal}
-                                className={`cursor-pointer rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98]`}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={saveAppointment}
-                                className="cursor-pointer rounded-md bg-[#0b1f4d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#102a63] active:scale-[0.98]"
-                            >
-                                Save Appointment
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <AppointmentModal
+                    appointment={selectedAppointment}
+                    appointmentDate={selectedAppointmentDate}
+                    doctorId={appointmentDoctorId}
+                    doctorOptions={doctorOptions}
+                    isEditingExisting={isEditingExistingAppointment}
+                    patientId={appointmentPatientId}
+                    patientOptions={patientOptions}
+                    onClose={closeAppointmentModal}
+                    onDoctorChange={setAppointmentDoctorId}
+                    onPatientChange={setAppointmentPatientId}
+                    onRemove={() => removeAppointment(selectedAppointmentDateKey)}
+                    onSave={saveAppointment}
+                />
             )}
         </div>
     );

@@ -82,14 +82,14 @@ export default function PatientFiltersToolbar({
             <div className="flex flex-wrap items-center gap-2">
                 <Input
                     placeholder="Search patients..."
-                    className="w-42 [&_input]:h-9 [&_input]:rounded-lg"
+                    className="w-full sm:w-42 [&_input]:h-9 [&_input]:rounded-lg"
                     leftIcon={<Search className="h-4 w-4" />}
                     value={search}
                     onChange={(event) => onSearchChange(event.target.value)}
                 />
 
                 <Select
-                    className="w-28 [&_button]:h-9 [&_button]:rounded-lg"
+                    className="w-[calc(50%-0.25rem)] sm:w-28 [&_button]:h-9 [&_button]:rounded-lg"
                     value={statusFilter}
                     options={statusOptions}
                     onValueChange={(value) =>
@@ -99,7 +99,7 @@ export default function PatientFiltersToolbar({
                 />
 
                 <Select
-                    className="w-32 [&_button]:h-9 [&_button]:rounded-lg"
+                    className="w-[calc(50%-0.25rem)] sm:w-32 [&_button]:h-9 [&_button]:rounded-lg"
                     value={roomFilter}
                     options={roomSelectOptions}
                     onValueChange={onRoomFilterChange}
@@ -114,7 +114,7 @@ export default function PatientFiltersToolbar({
                     value={minAgeFilter}
                     onChange={(event) => onMinAgeFilterChange(event.target.value)}
                     placeholder="Min age"
-                    className="w-28 [&_input]:h-9 [&_input]:rounded-lg"
+                    className="w-[calc(50%-0.25rem)] sm:w-28 [&_input]:h-9 [&_input]:rounded-lg"
                     inputClassName={ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}
                 />
 
@@ -126,12 +126,12 @@ export default function PatientFiltersToolbar({
                     value={maxAgeFilter}
                     onChange={(event) => onMaxAgeFilterChange(event.target.value)}
                     placeholder="Max age"
-                    className="w-28 [&_input]:h-9 [&_input]:rounded-lg"
+                    className="w-[calc(50%-0.25rem)] sm:w-28 [&_input]:h-9 [&_input]:rounded-lg"
                     inputClassName={ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}
                 />
 
                 <Select
-                    className="w-39 [&_button]:h-9 [&_button]:rounded-lg"
+                    className="w-full sm:w-39 [&_button]:h-9 [&_button]:rounded-lg"
                     value={sortBy}
                     options={sortOptions}
                     onValueChange={(value) => onSortChange(value as SortOption)}
@@ -142,7 +142,7 @@ export default function PatientFiltersToolbar({
                     type="button"
                     onClick={onClearFilters}
                     disabled={!hasActiveFilters}
-                    className={`h-9 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
+                    className={`h-9 flex-1 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition sm:flex-none ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                     Clear all
                 </button>

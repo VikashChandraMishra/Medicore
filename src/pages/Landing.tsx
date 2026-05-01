@@ -4,8 +4,8 @@ export default function Landing() {
     return (
         <div className={`min-h-screen ${THEME.SITE_BACKGROUND} text-gray-800`}>
             {/* Hero */}
-            <section className="text-center px-6 mt-16">
-                <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            <section className="mt-12 px-4 text-center sm:mt-16 sm:px-6">
+                <h1 className="mb-6 text-3xl font-bold sm:text-4xl md:text-5xl">
                     Modern Healthcare Management Platform
                 </h1>
 
@@ -14,7 +14,7 @@ export default function Landing() {
                     scalable interface designed for clinics and hospitals.
                 </p>
 
-                <div className="flex justify-center gap-4">
+                <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
                     <button className="cursor-pointer rounded-md bg-[#0b1f4d] px-6 py-3 text-white transition hover:bg-[#102a63] active:scale-[0.98]">
                         Get Started
                     </button>
@@ -25,7 +25,7 @@ export default function Landing() {
             </section>
 
             {/* Features */}
-            <section className="max-w-6xl mx-auto px-6 mt-20 grid md:grid-cols-3 gap-6">
+            <section className="mx-auto mt-16 grid max-w-6xl gap-4 px-4 sm:px-6 md:grid-cols-3 md:gap-6">
                 <div className="p-6 bg-white rounded-xl">
                     <h3 className="font-semibold text-lg mb-2">Patient Management</h3>
                     <p className="text-sm text-gray-500">

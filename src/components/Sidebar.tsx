@@ -57,7 +57,7 @@ export default function Sidebar({ isOpen, onClose }: Props) {
 
     return (
         <aside
-            className={`relative z-50 flex h-full shrink-0 flex-col ${THEME.SITE_BACKGROUND} transition-all duration-300 ease-in-out ${isOpen ? "w-72 px-4 py-5" : "w-20 px-3 py-5"}`}
+            className={`z-50 flex h-full shrink-0 flex-col ${THEME.SITE_BACKGROUND} transition-all duration-300 ease-in-out ${isOpen ? "fixed inset-y-0 left-0 w-[min(18rem,calc(100vw-2rem))] px-4 py-5 shadow-2xl md:relative md:w-72 md:shadow-none" : "hidden w-20 px-3 py-5 md:relative md:flex"}`}
         >
             <div className={`mb-6 flex items-center ${isOpen ? "justify-between" : "justify-center"}`}>
                 <div className={`flex min-w-0 items-center gap-3 ${isOpen ? "" : "justify-center"}`}>
@@ -78,7 +78,7 @@ export default function Sidebar({ isOpen, onClose }: Props) {
                 <button
                     type="button"
                     onClick={onClose}
-                    className={`grid h-9 w-9 cursor-pointer place-items-center rounded-md bg-white text-gray-600 shadow-sm transition hover:text-[#0b1f4d] active:scale-[0.96] ${isOpen ? "" : "absolute -right-5 top-6"}`}
+                    className={`grid h-9 w-9 cursor-pointer place-items-center rounded-md bg-white text-gray-600 shadow-sm transition hover:text-[#0b1f4d] active:scale-[0.96] ${isOpen ? "" : "absolute -right-5 top-6 hidden md:grid"}`}
                     aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
                     title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
                 >

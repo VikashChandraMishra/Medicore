@@ -638,7 +638,7 @@ export default function Analytics() {
                 {activeTab === "insurance" && (
                     <div className="p-5">
                         <div className="rounded-lg bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                    <div className="flex flex-col items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
                                 Insurance Insights
@@ -703,7 +703,7 @@ export default function Analytics() {
                 {activeTab === "risk" && (
                     <div className="p-5">
                         <div className="rounded-lg bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                    <div className="flex flex-col items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
                                 Risk Analysis

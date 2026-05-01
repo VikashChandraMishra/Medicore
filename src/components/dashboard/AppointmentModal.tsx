@@ -43,11 +43,11 @@ export default function AppointmentModal({
 }: AppointmentModalProps) {
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-4"
             onClick={onClose}
         >
             <div
-                className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl"
+                className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-4 shadow-2xl sm:p-5"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="flex items-start justify-between gap-4">

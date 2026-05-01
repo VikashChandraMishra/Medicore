@@ -48,7 +48,7 @@ export default function PatientPagination({
     return (
         <div className="mt-6 grid gap-3 text-sm text-gray-600 md:grid-cols-[1fr_auto_1fr] md:items-center">
             <p>{summary}</p>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
                 <button
                     type="button"
                     onClick={goToPreviousPage}

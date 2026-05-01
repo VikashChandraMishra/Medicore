@@ -569,7 +569,7 @@ export default function Dashboard() {
 
                 {visibleActiveTab === "alerts" && !isStaffDashboard && (
                     <>
-                        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                        <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:items-center sm:px-5">
                             <div>
                                 <h2 className="text-lg font-semibold text-gray-950">Critical Alerts</h2>
                                 <p className="text-sm text-gray-500">Critical status, emergency visits, and warning notes</p>
@@ -673,7 +673,7 @@ export default function Dashboard() {
                                 <p className="text-sm text-gray-500">{formatMonthYear(currentMonth)}</p>
                             </div>
                         </div>
-                        <div className="px-5 py-4">
+                        <div className="px-3 py-4 sm:px-5">
                             <AppointmentCalendar
                                 appointments={visibleAppointments}
                                 calendarDays={calendarDays}
@@ -689,7 +689,7 @@ export default function Dashboard() {
 
                 {visibleActiveTab === "patients" && !isStaffDashboard && (
                     <>
-                        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                        <div className="flex flex-col items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
                             <div>
                                 <h2 className="text-lg font-semibold text-gray-950">Patient Snapshot</h2>
                                 <p className="text-sm text-gray-500">Recent patients with status and condition count</p>

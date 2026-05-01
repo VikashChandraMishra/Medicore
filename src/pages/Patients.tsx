@@ -228,7 +228,7 @@ export default function Patients() {
 
                 <div ref={patientSelectionRef}>
                     {dataLoading || screenLoading ? (
-                        <div className="grid md:grid-cols-3 gap-4">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <div key={i} className="h-40 animate-pulse rounded-xl bg-white shadow-sm" />
                             ))}
@@ -239,7 +239,7 @@ export default function Patients() {
                         </div>
                     ) : view === "grid" ? (
                         <>
-                        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {paginatedPatients.map((patient) => {
                                 const isSelected = selected?.id === patient.id && isDetailsOpen;
 

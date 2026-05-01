@@ -29,12 +29,13 @@ import { USER_STATUS } from "../constants/user";
 import { mockDoctors } from "../data/doctors";
 import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
-import { notify } from "../utils/toast";
-import { getDoctorByEmail, getScopedPatientsForEmail } from "../utils/patient-scope";
 import type { Note, Patient, Visit } from "../types/patient";
+import { getDoctorByEmail, getScopedPatientsForEmail } from "../utils/patient-scope";
+import { notify } from "../utils/toast";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const LAST_SEVEN_DAYS_IN_MS = 7 * DAY_IN_MS;
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type TimelineItem = {
     id: string;
@@ -55,7 +56,14 @@ type CriticalAlert = {
     severity: "critical" | "warning";
 };
 
-type DashboardTab = "alerts" | "visits" | "activity" | "patients" | "users";
+type DashboardTab = "alerts" | "visits" | "activity" | "appointments" | "patients" | "users";
+
+type CalendarDay = {
+    date: Date;
+    isCurrentMonth: boolean;
+    isPast: boolean;
+    isToday: boolean;
+};
 
 function getFullName(patient: Patient) {
     return `${patient.firstName} ${patient.lastName}`;
@@ -109,6 +117,40 @@ function formatDateTime(date?: Date) {
         hour: "2-digit",
         minute: "2-digit",
     }).format(date);
+}
+
+function formatMonthYear(date: Date) {
+    return new Intl.DateTimeFormat("en", {
+        month: "long",
+        year: "numeric",
+    }).format(date);
+}
+
+function getMonthCalendarDays(date: Date) {
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const calendarStart = new Date(monthStart);
+    calendarStart.setDate(monthStart.getDate() - monthStart.getDay());
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const totalDays = Math.ceil((monthEnd.getDate() + monthStart.getDay()) / 7) * 7;
+
+    return Array.from({ length: totalDays }).map((_, index): CalendarDay => {
+        const day = new Date(calendarStart);
+        day.setDate(calendarStart.getDate() + index);
+
+        const normalizedDay = new Date(day);
+        normalizedDay.setHours(0, 0, 0, 0);
+
+        return {
+            date: day,
+            isCurrentMonth: day.getMonth() === date.getMonth(),
+            isPast: normalizedDay < today,
+            isToday: normalizedDay.getTime() === today.getTime(),
+        };
+    });
 }
 
 function formatRelativeTime(date: Date, now: Date) {
@@ -251,7 +293,11 @@ export default function Dashboard() {
         if (!showUserDirectory && activeTab === "users") {
             setActiveTab("alerts");
         }
-    }, [activeTab, showUserDirectory]);
+
+        if (!currentDoctor && activeTab === "appointments") {
+            setActiveTab("alerts");
+        }
+    }, [activeTab, currentDoctor, showUserDirectory]);
 
     const activePatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.ACTIVE,
@@ -285,11 +331,14 @@ export default function Dashboard() {
         )
         .slice(0, 7);
     const patientSnapshotTotalPages = 1;
+    const currentMonth = new Date();
+    const calendarDays = getMonthCalendarDays(currentMonth);
     const dailyVisitTrend = getDailyVisitTrend(allVisits, operationalNow);
     const dashboardTabs: Array<{ label: string; value: DashboardTab }> = [
         { label: "Critical Alerts", value: "alerts" },
         { label: "Visits in Last 7 Days", value: "visits" },
         { label: "Recent Activity", value: "activity" },
+        ...(currentDoctor ? [{ label: "Upcoming Appointments", value: "appointments" as DashboardTab }] : []),
         { label: "Patient Snapshot", value: "patients" },
         ...(showUserDirectory ? [{ label: "Users", value: "users" as DashboardTab }] : []),
     ];
@@ -553,6 +602,57 @@ export default function Dashboard() {
                     </>
                 )}
 
+                {activeTab === "appointments" && currentDoctor && (
+                    <>
+                        <div className="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-950">Upcoming Appointments</h2>
+                                <p className="text-sm text-gray-500">{formatMonthYear(currentMonth)}</p>
+                            </div>
+                        </div>
+                        <div className="px-5 py-4">
+                            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+                                    {WEEKDAYS.map((weekday) => (
+                                        <div key={weekday} className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                            {weekday}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-7">
+                                    {calendarDays.map((day) => {
+                                        const dayLabel = day.date.getDate();
+                                        const dayKey = getDateKey(day.date);
+
+                                        return (
+                                            <div
+                                                key={dayKey}
+                                                className={`min-h-28 border-b border-r border-gray-200 p-2 last:border-r-0 sm:min-h-32 ${day.isPast
+                                                    ? "bg-gray-100 text-gray-400"
+                                                    : day.isCurrentMonth
+                                                        ? "bg-white text-gray-800"
+                                                        : "bg-gray-50 text-gray-300"
+                                                    }`}
+                                            >
+                                                <div className="flex justify-end">
+                                                    <span
+                                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium ${day.isToday
+                                                            ? "bg-[#0b1f4d] text-white"
+                                                            : ""
+                                                            }`}
+                                                    >
+                                                        {dayLabel}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
                 {activeTab === "patients" && (
                     <>
                         <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
@@ -560,9 +660,11 @@ export default function Dashboard() {
                                 <h2 className="text-lg font-semibold text-gray-950">Patient Snapshot</h2>
                                 <p className="text-sm text-gray-500">Recent patients with status and condition count</p>
                             </div>
-                            <Link to="/patients" className="cursor-pointer rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]">
-                                View all
-                            </Link>
+                            {showUserDirectory && (
+                                <Link to="/patients" className="cursor-pointer rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]">
+                                    View all
+                                </Link>
+                            )}
                         </div>
                         <DataTable
                             outerClassName="mx-5 mb-4 overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200"

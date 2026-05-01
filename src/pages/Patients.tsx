@@ -1,150 +1,48 @@
 import {
     Activity,
     Check,
-    ChevronLeft,
-    ChevronRight,
     FileText,
-    LayoutGrid,
-    List,
     MapPin,
     MoreVertical,
-    Search,
-    Stethoscope,
-    Thermometer,
     UserRound
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import Badge, { type BadgeTone } from "../components/ui/Badge";
-import CloseButton from "../components/ui/CloseButton";
+import PatientDetailsPanel from "../components/patients/PatientDetailsPanel";
+import PatientFiltersToolbar from "../components/patients/PatientFiltersToolbar";
+import PatientPagination from "../components/patients/PatientPagination";
+import VisitDetailsModal from "../components/patients/VisitDetailsModal";
 import DataTable from "../components/ui/DataTable";
-import Input from "../components/ui/Input";
-import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
 import { THEME } from "../constants/theme";
-import { mockDoctors } from "../data/doctors";
-import { mockPatients } from "../data/patients";
 import useAuth from "../hooks/use-auth";
+import useDebounce from "../hooks/use-debounce";
 import type { Patient, Visit } from "../types/patient";
+import { formatLabel } from "../utils/format";
 import { getInitialsFromName } from "../utils/initials";
 import { getScopedPatientsForEmail } from "../utils/patient-scope";
-
-const LIST_PAGE_SIZE = 10;
-const GRID_PAGE_SIZE = 8;
-
-const SORT_OPTIONS = {
-    NONE: "NONE",
-    NAME_ASC: "NAME_ASC",
-    AGE_ASC: "AGE_ASC",
-    AGE_DESC: "AGE_DESC",
-    LAST_VISIT_DESC: "LAST_VISIT_DESC",
-    LAST_VISIT_ASC: "LAST_VISIT_ASC",
-    ROOM_ASC: "ROOM_ASC",
-} as const;
-
-type SortOption = typeof SORT_OPTIONS[keyof typeof SORT_OPTIONS];
-
-function useDebounce<T>(value: T, delay = 300) {
-    const [debounced, setDebounced] = useState(value);
-
-    useEffect(() => {
-        const t = setTimeout(() => setDebounced(value), delay);
-        return () => clearTimeout(t);
-    }, [value, delay]);
-
-    return debounced;
-}
-
-function getFullName(patient: Patient) {
-    return `${patient.firstName} ${patient.lastName}`;
-}
-
-function getPrimaryCondition(patient: Patient) {
-    return patient.chronicConditions[0] ?? "General care";
-}
-
-function formatDate(date?: Date) {
-    if (!date) return "Not visited yet";
-
-    return new Intl.DateTimeFormat("en", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    }).format(date);
-}
-
-function formatLabel(value: string) {
-    return value.charAt(0) + value.slice(1).toLowerCase();
-}
-
-function getInitials(patient: Patient) {
-    return `${patient.firstName.charAt(0)}${patient.lastName.charAt(0)}`;
-}
-
-function getLatestVisit(patient: Patient) {
-    return patient.visits[patient.visits.length - 1];
-}
-
-function getDoctorName(doctorId?: string) {
-    if (!doctorId) return "Unassigned";
-
-    return mockDoctors.find((doctor) => doctor.id === doctorId)?.displayName ?? "Unassigned";
-}
-
-function getDoctorMeta(patient: Patient) {
-    const visit = getLatestVisit(patient);
-
-    return {
-        name: getDoctorName(visit?.doctorId),
-        specialty: visit?.type ? formatLabel(visit.type) : "General",
-    };
-}
-
-function getRoomNumber(patient: Patient, index: number) {
-    const number = 101 + index;
-    const prefix = patient.status === PATIENT_STATUS.CRITICAL ? "E" : "R";
-
-    return `${prefix}-${number}`;
-}
-
-function getStableRoomNumber(patient: Patient) {
-    const patientIndex = mockPatients.findIndex((item) => item.id === patient.id);
-    return getRoomNumber(patient, Math.max(0, patientIndex));
-}
+import { getFullName } from "../utils/people";
+import {
+    filterPatients,
+    formatPatientDate,
+    getAgeFilterError,
+    getDoctorMeta,
+    getPatientInitials,
+    getPrimaryCondition,
+    getSelectedTextClass,
+    getStableRoomNumber,
+    GRID_PAGE_SIZE,
+    LIST_PAGE_SIZE,
+    SORT_OPTIONS,
+    sortPatients,
+    type SortOption,
+} from "../utils/patient-records";
 
 function getStatusTone(status: PatientStatus): BadgeTone {
     if (status === PATIENT_STATUS.ACTIVE) return "green";
     if (status === PATIENT_STATUS.CRITICAL) return "red";
     return "amber";
-}
-
-function truncateText(value: string, maxLength = 96) {
-    if (value.length <= maxLength) return value;
-    return `${value.slice(0, maxLength).trim()}...`;
-}
-
-function getSelectedTextClass(isSelected: boolean, defaultClass: string) {
-    return isSelected ? "text-white" : defaultClass;
-}
-
-function getAgeFilterError(minAgeFilter: string, maxAgeFilter: string) {
-    const min = minAgeFilter.trim();
-    const max = maxAgeFilter.trim();
-    const agePattern = /^\d+$/;
-
-    if (min && !agePattern.test(min)) return "Minimum age must be a whole number.";
-    if (max && !agePattern.test(max)) return "Maximum age must be a whole number.";
-
-    const minAge = min ? Number(min) : null;
-    const maxAge = max ? Number(max) : null;
-
-    if (minAge !== null && minAge > 120) return "Minimum age must be 120 or less.";
-    if (maxAge !== null && maxAge > 120) return "Maximum age must be 120 or less.";
-    if (minAge !== null && maxAge !== null && minAge > maxAge) {
-        return "Minimum age cannot be greater than maximum age.";
-    }
-
-    return "";
 }
 
 export default function Patients() {
@@ -160,7 +58,6 @@ export default function Patients() {
     const [selected, setSelected] = useState<Patient | null>(null);
     const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [visitView, setVisitView] = useState<"timeline" | "cards">("timeline");
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const detailsRef = useRef<HTMLDivElement | null>(null);
@@ -173,33 +70,6 @@ export default function Patients() {
         [user?.email],
     );
 
-    const statusOptions = [
-        { label: "All Status", value: "all" },
-        { label: "Active", value: PATIENT_STATUS.ACTIVE },
-        { label: "Inactive", value: PATIENT_STATUS.INACTIVE },
-        { label: "Critical", value: PATIENT_STATUS.CRITICAL },
-    ];
-
-    const roomSelectOptions = [
-        { label: "All Rooms", value: "all" },
-        ...scopedPatients.map((patient) => {
-            const room = getStableRoomNumber(patient);
-
-            return {
-                label: room,
-                value: room,
-            };
-        }),
-    ];
-    const sortOptions = [
-        { label: "No Sort", value: SORT_OPTIONS.NONE },
-        { label: "Name A-Z", value: SORT_OPTIONS.NAME_ASC },
-        { label: "Age low-high", value: SORT_OPTIONS.AGE_ASC },
-        { label: "Age high-low", value: SORT_OPTIONS.AGE_DESC },
-        { label: "Recent visit", value: SORT_OPTIONS.LAST_VISIT_DESC },
-        { label: "Oldest visit", value: SORT_OPTIONS.LAST_VISIT_ASC },
-        { label: "Room number", value: SORT_OPTIONS.ROOM_ASC },
-    ];
     const ageFilterError = getAgeFilterError(minAgeFilter, maxAgeFilter);
     const hasActiveFilters =
         search.trim() !== "" ||
@@ -296,67 +166,18 @@ export default function Patients() {
     }, [isDetailsOpen, selected, selectedVisit]);
 
     const filtered = useMemo(() => {
-        return scopedPatients.filter((patient) => {
-            const query = debouncedSearch.toLowerCase();
-            const searchable = [
-                getFullName(patient),
-                patient.email,
-                patient.phone,
-                patient.address.city,
-                patient.address.state,
-                patient.bloodGroup ?? "",
-                patient.insurance.provider,
-                patient.insurance.policyNumber,
-                ...patient.allergies,
-                ...patient.chronicConditions,
-            ]
-                .join(" ")
-                .toLowerCase();
-
-            const matchesSearch = searchable.includes(query);
-            const matchesStatus =
-                statusFilter === "all" || patient.status === statusFilter;
-            const matchesRoom =
-                roomFilter === "all" || getStableRoomNumber(patient) === roomFilter;
-            if (ageFilterError) return false;
-
-            const minAge = Number(minAgeFilter);
-            const maxAge = Number(maxAgeFilter);
-            const matchesMinAge =
-                !minAgeFilter.trim() || Number.isNaN(minAge) || patient.age >= minAge;
-            const matchesMaxAge =
-                !maxAgeFilter.trim() || Number.isNaN(maxAge) || patient.age <= maxAge;
-
-            return (
-                matchesSearch &&
-                matchesStatus &&
-                matchesRoom &&
-                matchesMinAge &&
-                matchesMaxAge
-            );
+        return filterPatients(scopedPatients, {
+            ageFilterError,
+            maxAgeFilter,
+            minAgeFilter,
+            roomFilter,
+            search: debouncedSearch,
+            statusFilter,
         });
     }, [ageFilterError, debouncedSearch, maxAgeFilter, minAgeFilter, roomFilter, scopedPatients, statusFilter]);
 
     const sortedPatients = useMemo(() => {
-        if (sortBy === SORT_OPTIONS.NONE) return filtered;
-
-        return [...filtered].sort((a, b) => {
-            if (sortBy === SORT_OPTIONS.AGE_ASC) return a.age - b.age;
-            if (sortBy === SORT_OPTIONS.AGE_DESC) return b.age - a.age;
-            if (sortBy === SORT_OPTIONS.LAST_VISIT_ASC) {
-                return (a.lastVisitAt?.getTime() ?? 0) - (b.lastVisitAt?.getTime() ?? 0);
-            }
-            if (sortBy === SORT_OPTIONS.LAST_VISIT_DESC) {
-                return (b.lastVisitAt?.getTime() ?? 0) - (a.lastVisitAt?.getTime() ?? 0);
-            }
-            if (sortBy === SORT_OPTIONS.ROOM_ASC) {
-                return getStableRoomNumber(a).localeCompare(getStableRoomNumber(b), undefined, {
-                    numeric: true,
-                });
-            }
-
-            return getFullName(a).localeCompare(getFullName(b));
-        });
+        return sortPatients(filtered, sortBy);
     }, [filtered, sortBy]);
 
     useEffect(() => {
@@ -385,101 +206,26 @@ export default function Patients() {
                     </p>
                 </div>
 
-                <div className="mb-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Input
-                            placeholder="Search patients..."
-                            className="w-42 [&_input]:h-9 [&_input]:rounded-lg"
-                            leftIcon={<Search className="h-4 w-4" />}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-
-                        <Select
-                            className="w-28 [&_button]:h-9 [&_button]:rounded-lg"
-                            value={statusFilter}
-                            options={statusOptions}
-                            onValueChange={(value) =>
-                                setStatusFilter(value as PatientStatus | "all")
-                            }
-                            ariaLabel="Filter by status"
-                        />
-
-                        <Select
-                            className="w-32 [&_button]:h-9 [&_button]:rounded-lg"
-                            value={roomFilter}
-                            options={roomSelectOptions}
-                            onValueChange={setRoomFilter}
-                            ariaLabel="Filter by room number"
-                        />
-
-                        <Input
-                            type="number"
-                            min={0}
-                            max={120}
-                            step={1}
-                            value={minAgeFilter}
-                            onChange={(e) => setMinAgeFilter(e.target.value)}
-                            placeholder="Min age"
-                            className="w-28 [&_input]:h-9 [&_input]:rounded-lg"
-                            inputClassName={ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}
-                        />
-
-                        <Input
-                            type="number"
-                            min={0}
-                            max={120}
-                            step={1}
-                            value={maxAgeFilter}
-                            onChange={(e) => setMaxAgeFilter(e.target.value)}
-                            placeholder="Max age"
-                            className="w-28 [&_input]:h-9 [&_input]:rounded-lg"
-                            inputClassName={ageFilterError ? "border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}
-                        />
-
-                        <Select
-                            className="w-39 [&_button]:h-9 [&_button]:rounded-lg"
-                            value={sortBy}
-                            options={sortOptions}
-                            onValueChange={(value) => setSortBy(value as SortOption)}
-                            ariaLabel="Sort patients"
-                        />
-
-                        <button
-                            type="button"
-                            onClick={clearAllFilters}
-                            disabled={!hasActiveFilters}
-                            className={`h-9 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
-                        >
-                            Clear all
-                        </button>
-
-                        <div className="flex overflow-hidden rounded-md border-2 border-[#0b1f4d] divide-x-2 divide-[#0b1f4d]">
-                            <button
-                                aria-label="Grid view"
-                                title="Grid view"
-                                className={`grid h-9 w-10 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "grid" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
-                                onClick={() => setView("grid")}
-                            >
-                                <LayoutGrid className="h-5 w-5" />
-                            </button>
-                            <button
-                                aria-label="List view"
-                                title="List view"
-                                className={`grid h-9 w-10 cursor-pointer place-items-center transition active:scale-[0.95] ${view === "list" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"}`}
-                                onClick={() => setView("list")}
-                            >
-                                <List className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {ageFilterError && (
-                        <p className="mt-2 text-sm text-red-600">
-                            {ageFilterError}
-                        </p>
-                    )}
-                </div>
+                <PatientFiltersToolbar
+                    search={search}
+                    statusFilter={statusFilter}
+                    roomFilter={roomFilter}
+                    minAgeFilter={minAgeFilter}
+                    maxAgeFilter={maxAgeFilter}
+                    sortBy={sortBy}
+                    view={view}
+                    patients={scopedPatients}
+                    ageFilterError={ageFilterError}
+                    hasActiveFilters={hasActiveFilters}
+                    onSearchChange={setSearch}
+                    onStatusFilterChange={setStatusFilter}
+                    onRoomFilterChange={setRoomFilter}
+                    onMinAgeFilterChange={setMinAgeFilter}
+                    onMaxAgeFilterChange={setMaxAgeFilter}
+                    onSortChange={setSortBy}
+                    onViewChange={setView}
+                    onClearFilters={clearAllFilters}
+                />
 
                 <div ref={patientSelectionRef}>
                     {loading ? (
@@ -512,7 +258,7 @@ export default function Patients() {
                                                 {formatLabel(patient.status)}
                                             </Badge>
                                             <span className={`text-sm ${getSelectedTextClass(isSelected, "text-gray-500")}`}>
-                                                {formatDate(patient.lastVisitAt)}
+                                                {formatPatientDate(patient.lastVisitAt)}
                                             </span>
                                         </div>
 
@@ -545,47 +291,12 @@ export default function Patients() {
                             })}
                         </div>
 
-                        <div className="mt-6 grid gap-3 text-sm text-gray-600 md:grid-cols-[1fr_auto_1fr] md:items-center">
-                            <p>{recordSummary}</p>
-                            <div className="flex items-center justify-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                                    disabled={safeCurrentPage === 1}
-                                    className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
-                                    aria-label="Previous page"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </button>
-                                {Array.from({ length: totalPages }).map((_, index) => {
-                                    const page = index + 1;
-
-                                    return (
-                                        <button
-                                            key={page}
-                                            type="button"
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`h-10 min-w-10 cursor-pointer rounded-md border px-3 font-medium transition active:scale-[0.98] ${safeCurrentPage === page
-                                                ? "border-[#0b1f4d] bg-[#0b1f4d] text-white"
-                                                : `border-gray-200 bg-white text-gray-700 ${THEME.HOVER_BACKGROUND}`
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    );
-                                })}
-                                <button
-                                    type="button"
-                                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                                    disabled={safeCurrentPage === totalPages}
-                                    className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
-                                    aria-label="Next page"
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </button>
-                            </div>
-                            <div />
-                        </div>
+                        <PatientPagination
+                            currentPage={safeCurrentPage}
+                            totalPages={totalPages}
+                            summary={recordSummary}
+                            onPageChange={setCurrentPage}
+                        />
                         </>
                     ) : (
                         <DataTable
@@ -605,31 +316,12 @@ export default function Patients() {
                                 </>
                             }
                             footer={
-                                <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <button
-                                            onClick={() =>
-                                                setCurrentPage((page) => Math.max(1, page - 1))
-                                            }
-                                            disabled={safeCurrentPage === 1}
-                                            className={`cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
-                                        >
-                                            Previous
-                                        </button>
-                                        <span className="rounded-full bg-gray-100 px-3 py-2 text-gray-700">
-                                            {safeCurrentPage} / {totalPages}
-                                        </span>
-                                        <button
-                                            onClick={() =>
-                                                setCurrentPage((page) => Math.min(totalPages, page + 1))
-                                            }
-                                            disabled={safeCurrentPage === totalPages}
-                                            className={`cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
-                                        >
-                                            Next
-                                        </button>
-                                    </div>
-                                </div>
+                                <PatientPagination
+                                    currentPage={safeCurrentPage}
+                                    totalPages={totalPages}
+                                    variant="compact"
+                                    onPageChange={setCurrentPage}
+                                />
                             }
                         >
                                     {paginatedPatients.length === 0 ? (
@@ -660,7 +352,7 @@ export default function Patients() {
                                                         {pageStartIndex + index + 1}
                                                     </td>
                                                     <td className={`whitespace-nowrap px-3 py-3 ${getSelectedTextClass(isSelected, "text-gray-900")}`}>
-                                                        {formatDate(patient.lastVisitAt)}
+                                                        {formatPatientDate(patient.lastVisitAt)}
                                                     </td>
                                                     <td className="px-3 py-3">
                                                         <div className="flex items-center gap-3">
@@ -668,7 +360,7 @@ export default function Patients() {
                                                                 ? "bg-white text-[#0b1f4d]"
                                                                 : "bg-gray-100 text-gray-700"
                                                                 }`}>
-                                                                {getInitials(patient)}
+                                                                {getPatientInitials(patient)}
                                                             </div>
                                                             <div>
                                                                 <p className={`font-medium ${getSelectedTextClass(isSelected, "text-gray-950")}`}>
@@ -731,259 +423,20 @@ export default function Patients() {
                 </div>
 
                 {selected && (
-                    <div
-                        ref={detailsRef}
-                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl transition-all duration-300 ease-out ${isDetailsOpen
-                            ? "translate-x-0 opacity-100"
-                            : "translate-x-full opacity-0"
-                            }`}
-                    >
-                        <div className="mb-4 flex items-start justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl font-semibold">{getFullName(selected)}</h2>
-                                <p className="text-gray-500">
-                                    {selected.chronicConditions.join(", ") || "No chronic conditions"}
-                                </p>
-                            </div>
-                            <CloseButton
-                                onClick={closeDetails}
-                                label="Close patient details"
-                            />
-                        </div>
-
-                        <div className="mt-4 space-y-2 text-sm">
-                            <p>Age: {selected.age}</p>
-                            <p>Gender: {formatLabel(selected.gender)}</p>
-                            <p>Status: {formatLabel(selected.status)}</p>
-                            <p>Blood group: {selected.bloodGroup ?? "Not recorded"}</p>
-                            <p>
-                                Insurance: {selected.insurance.provider} (
-                                {selected.insurance.isActive ? "Active" : "Inactive"})
-                            </p>
-                            <p>Policy: {selected.insurance.policyNumber}</p>
-                            <p>Phone: {selected.phone}</p>
-                            <p>Email: {selected.email}</p>
-                            <p>
-                                Address: {selected.address.line1}
-                                {selected.address.line2 ? `, ${selected.address.line2}` : ""},{" "}
-                                {selected.address.city}, {selected.address.state}{" "}
-                                {selected.address.zip}
-                            </p>
-                            <p>
-                                Allergies: {selected.allergies.join(", ") || "None recorded"}
-                            </p>
-                            <p>Last Visit: {formatDate(selected.lastVisitAt)}</p>
-                        </div>
-
-                        <div className="mt-6">
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                                <h3 className="font-medium">Visits</h3>
-                                <div className="flex overflow-hidden rounded-md border border-gray-200">
-                                    <button
-                                        onClick={() => setVisitView("timeline")}
-                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "timeline" ? "bg-[#0b1f4d] text-white" : `text-gray-500 ${THEME.HOVER_BACKGROUND} hover:text-gray-800`}`}
-                                    >
-                                        Timeline
-                                    </button>
-                                    <button
-                                        onClick={() => setVisitView("cards")}
-                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "cards" ? "bg-[#0b1f4d] text-white" : `text-gray-500 ${THEME.HOVER_BACKGROUND} hover:text-gray-800`}`}
-                                    >
-                                        Detail
-                                    </button>
-                                </div>
-                            </div>
-
-                            {visitView === "timeline" ? (
-                                <div className="relative space-y-4 pl-5 before:absolute before:left-1.5 before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-gray-200">
-                                    {selected.visits.map((visit, index) => (
-                                        <button
-                                            key={`${selected.id}-visit-${index}`}
-                                            onClick={() => setSelectedVisit(visit)}
-                                            className="relative w-full cursor-pointer rounded-xl bg-gray-50 p-3 text-left text-sm transition hover:bg-gray-100 active:scale-[0.99]"
-                                        >
-                                            <span className="absolute -left-5 top-4 h-3 w-3 rounded-full border-2 border-white bg-[#0b1f4d]" />
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="font-medium text-gray-800">{visit.type}</p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {getDoctorName(visit.doctorId)}
-                                                    </p>
-                                                </div>
-                                                <p className="shrink-0 text-xs text-gray-500">
-                                                    {formatDate(visit.date)}
-                                                </p>
-                                            </div>
-                                            <p className="mt-2 text-gray-600">
-                                                {truncateText(visit.summary)}
-                                            </p>
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {selected.visits.map((visit, index) => (
-                                        <button
-                                            key={`${selected.id}-visit-card-${index}`}
-                                            onClick={() => setSelectedVisit(visit)}
-                                            className="w-full cursor-pointer rounded-xl bg-gray-50 p-3 text-left text-sm transition hover:bg-gray-100 active:scale-[0.99]"
-                                        >
-                                            <div className="flex justify-between gap-3">
-                                                <p className="font-medium">{visit.type}</p>
-                                                <p className="text-gray-500">{formatDate(visit.date)}</p>
-                                            </div>
-                                            <p className="text-gray-600">{getDoctorName(visit.doctorId)}</p>
-                                            <p className="mt-2">{visit.summary}</p>
-                                            {visit.diagnosis && (
-                                                <p className="mt-2">
-                                                    <span className="font-medium">Diagnosis:</span>{" "}
-                                                    {visit.diagnosis}
-                                                </p>
-                                            )}
-                                            {visit.prescription && (
-                                                <p className="mt-2">
-                                                    <span className="font-medium">Prescription:</span>{" "}
-                                                    {visit.prescription}
-                                                </p>
-                                            )}
-                                            {visit.vitals && (
-                                                <p className="mt-2 text-gray-600">
-                                                    BP {visit.vitals.bloodPressure ?? "N/A"} - HR{" "}
-                                                    {visit.vitals.heartRate ?? "N/A"} - Temp{" "}
-                                                    {visit.vitals.temperature ?? "N/A"} F
-                                                </p>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-6">
-                            <h3 className="font-medium mb-2">Notes</h3>
-                            {selected.notes.length === 0 ? (
-                                <p className="text-sm text-gray-400">No notes</p>
-                            ) : (
-                                <ul className="space-y-2">
-                                    {selected.notes.map((note, index) => (
-                                        <li key={`${selected.id}-note-${index}`} className="text-sm bg-gray-100 p-2 rounded">
-                                            <div className="flex justify-between gap-3">
-                                                <span className="font-medium">{note.type}</span>
-                                                <span className="text-gray-500">
-                                                    {formatDate(note.createdAt)}
-                                                </span>
-                                            </div>
-                                            <p className="mt-1">{note.content}</p>
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                By {getDoctorName(note.doctorId)}
-                                            </p>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
+                    <PatientDetailsPanel
+                        patient={selected}
+                        isOpen={isDetailsOpen}
+                        panelRef={detailsRef}
+                        onClose={closeDetails}
+                        onVisitSelect={setSelectedVisit}
+                    />
                 )}
 
                 {selectedVisit && (
-                    <div
-                        className="fixed inset-0 z-40 flex items-center justify-center px-4"
-                        onClick={() => setSelectedVisit(null)}
-                    >
-                        <div
-                            className="h-[calc(100vh-3rem)] max-h-120 w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="mb-5 flex items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-sm text-gray-500">
-                                        {formatDate(selectedVisit.date)}
-                                    </p>
-                                    <h3 className="text-xl font-semibold text-gray-800">
-                                        {selectedVisit.type}
-                                    </h3>
-                                    <p className="text-sm text-gray-500">
-                                        {getDoctorName(selectedVisit.doctorId)}
-                                    </p>
-                                </div>
-                                <CloseButton
-                                    onClick={() => setSelectedVisit(null)}
-                                    label="Close visit details"
-                                />
-                            </div>
-
-                            <div className="space-y-4 text-sm">
-                                <div>
-                                    <p className="font-medium text-gray-800">Summary</p>
-                                    <p className="mt-1 text-gray-600">{selectedVisit.summary}</p>
-                                </div>
-
-                                <div>
-                                    <p className="font-medium text-gray-800">Symptoms</p>
-                                    <p className="mt-1 text-gray-600">
-                                        {selectedVisit.symptoms.join(", ")}
-                                    </p>
-                                </div>
-
-                                {selectedVisit.diagnosis && (
-                                    <div>
-                                        <p className="font-medium text-gray-800">Diagnosis</p>
-                                        <p className="mt-1 text-gray-600">
-                                            {selectedVisit.diagnosis}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {selectedVisit.prescription && (
-                                    <div>
-                                        <p className="font-medium text-gray-800">Prescription</p>
-                                        <p className="mt-1 text-gray-600">
-                                            {selectedVisit.prescription}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {selectedVisit.vitals && (
-                                    <div>
-                                        <p className="font-medium text-gray-800">Vitals</p>
-                                        <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                                            <div className="rounded-xl bg-gray-50 p-3">
-                                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
-                                                    <Stethoscope className="h-3.5 w-3.5" />
-                                                    Blood Pressure
-                                                </p>
-                                                <p className="font-medium text-gray-800">
-                                                    {selectedVisit.vitals.bloodPressure ?? "N/A"}
-                                                </p>
-                                            </div>
-                                            <div className="rounded-xl bg-gray-50 p-3">
-                                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
-                                                    <Activity className="h-3.5 w-3.5" />
-                                                    Heart Rate
-                                                </p>
-                                                <p className="font-medium text-gray-800">
-                                                    {selectedVisit.vitals.heartRate ?? "N/A"}
-                                                </p>
-                                            </div>
-                                            <div className="rounded-xl bg-gray-50 p-3">
-                                                <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
-                                                    <Thermometer className="h-3.5 w-3.5" />
-                                                    Temperature
-                                                </p>
-                                                <p className="font-medium text-gray-800">
-                                                    {selectedVisit.vitals.temperature ?? "N/A"} F
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <p className="text-xs text-gray-500">
-                                    Created {formatDate(selectedVisit.createdAt)}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    <VisitDetailsModal
+                        visit={selectedVisit}
+                        onClose={() => setSelectedVisit(null)}
+                    />
                 )}
             </div>
         </div>

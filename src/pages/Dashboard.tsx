@@ -1,7 +1,7 @@
+import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore";
 import {
     Activity,
     AlertTriangle,
-    BellRing,
     CalendarClock,
     Clock3,
     FileWarning,
@@ -12,7 +12,6 @@ import {
     X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router";
 import {
     Area,
@@ -181,6 +180,25 @@ function isAppointment(value: unknown): value is Appointment {
     );
 }
 
+function getNotificationStatus(permission: NotificationPermission) {
+    if (permission === "granted") return { label: "Notifications enabled", tone: "green" as const };
+    if (permission === "denied") return { label: "Notifications blocked", tone: "red" as const };
+    return { label: "Notifications not enabled", tone: "amber" as const };
+}
+
+async function showServiceWorkerNotification(title: string, options: NotificationOptions) {
+    if (!("serviceWorker" in navigator)) {
+        throw new Error("Service worker notifications are unavailable.");
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    await registration.showNotification(title, {
+        ...options,
+        requireInteraction: true,
+    });
+}
+
 function formatRelativeTime(date: Date, now: Date) {
     const diff = Math.max(0, now.getTime() - date.getTime());
     const hours = Math.floor(diff / (60 * 60 * 1000));
@@ -319,6 +337,11 @@ export default function Dashboard() {
     const [selectedAppointmentDateKey, setSelectedAppointmentDateKey] = useState<string | null>(null);
     const [appointmentPatientId, setAppointmentPatientId] = useState("");
     const [appointmentDoctorId, setAppointmentDoctorId] = useState("");
+    const [isEditingExistingAppointment, setIsEditingExistingAppointment] = useState(false);
+    const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() =>
+        "Notification" in window ? Notification.permission : "denied",
+    );
+    const [isServiceWorkerReady, setIsServiceWorkerReady] = useState(false);
     const notifiedAppointmentIdsRef = useRef<Set<string>>(new Set());
     const showUserDirectory = isAdminEmail(user?.email);
     const currentDoctor = getDoctorByEmail(user?.email);
@@ -365,19 +388,58 @@ export default function Dashboard() {
     }, []);
 
     useEffect(() => {
-        if (!currentDoctor || !("Notification" in window) || Notification.permission !== "default") {
+        if (!currentDoctor || !("Notification" in window)) {
             return;
         }
 
-        Notification.requestPermission().catch(() => undefined);
+        setNotificationPermission(Notification.permission);
+
+        if (Notification.permission !== "default") {
+            return;
+        }
+
+        Notification.requestPermission()
+            .then((permission) => setNotificationPermission(permission))
+            .catch(() => setNotificationPermission(Notification.permission));
     }, [currentDoctor]);
 
     useEffect(() => {
+        if (!("serviceWorker" in navigator)) {
+            setIsServiceWorkerReady(false);
+            return;
+        }
+
+        let isMounted = true;
+
+        navigator.serviceWorker.ready
+            .then(() => {
+                if (isMounted) {
+                    setIsServiceWorkerReady(true);
+                }
+            })
+            .catch(() => {
+                if (isMounted) {
+                    setIsServiceWorkerReady(false);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (currentDoctor && !("serviceWorker" in navigator)) {
+            notify.error("Notifications are unavailable", {
+                description: "This browser does not support service worker notifications.",
+            });
+            return;
+        }
+
         if (
             !currentDoctor ||
-            !("Notification" in window) ||
             !("serviceWorker" in navigator) ||
-            Notification.permission !== "granted"
+            notificationPermission !== "granted"
         ) {
             return;
         }
@@ -395,11 +457,9 @@ export default function Dashboard() {
         if (pendingNotifications.length === 0) return;
 
         const showAppointmentNotifications = async () => {
-            const registration = await navigator.serviceWorker.ready;
-
             await Promise.all(
                 pendingNotifications.map((appointment) =>
-                    registration.showNotification("New appointment scheduled", {
+                    showServiceWorkerNotification("New appointment scheduled", {
                         body: `${getPatientName(appointment.patientId)} on ${formatLongDate(new Date(`${appointment.appointmentDate}T00:00:00`))}`,
                         icon: "/android-chrome-192x192.png",
                         badge: "/favicon-32x32.png",
@@ -419,8 +479,12 @@ export default function Dashboard() {
             });
         };
 
-        showAppointmentNotifications().catch(() => undefined);
-    }, [appointments, currentDoctor]);
+        showAppointmentNotifications().catch(() => {
+            notify.error("Could not show appointment notification", {
+                description: "Check browser notification and service worker permissions.",
+            });
+        });
+    }, [appointments, currentDoctor, notificationPermission]);
 
     const activePatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.ACTIVE,
@@ -477,6 +541,7 @@ export default function Dashboard() {
         label: doctor.displayName,
         value: doctor.id,
     }));
+    const notificationStatus = getNotificationStatus(notificationPermission);
     const visibleActiveTab =
         isStaffDashboard && activeTab !== "visits" && activeTab !== "appointments"
             ? "visits"
@@ -521,57 +586,63 @@ export default function Dashboard() {
             },
         ];
 
-    const handleSimulateEmergencyAlert = async () => {
-        const criticalPatient =
-            scopedPatients.find((patient) => patient.status === PATIENT_STATUS.CRITICAL) ??
-            scopedPatients[0];
-
-        if (!criticalPatient) {
-            notify.error("No patients available", {
-                description: "There are no patients in this dashboard scope.",
+    const handleEnableNotifications = async () => {
+        if (!("Notification" in window)) {
+            notify.error("Notifications are unavailable", {
+                description: "This browser does not support notifications.",
             });
+            setNotificationPermission("denied");
             return;
         }
 
-        const latestVisit = getLatestVisit(criticalPatient);
-        const title = "Emergency alert";
-        const body = `${getFullName(criticalPatient)} - ${latestVisit?.diagnosis ?? "urgent review needed"}`;
-
-        if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+        if (!("serviceWorker" in navigator)) {
             notify.error("Notifications are unavailable", {
                 description: "This browser does not support service worker notifications.",
             });
             return;
         }
 
-        const permission =
-            Notification.permission === "granted"
-                ? "granted"
-                : await Notification.requestPermission();
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
 
-        if (permission !== "granted") {
-            notify.error("Notification permission blocked", {
-                description: "Allow notifications to test the emergency alert.",
-            });
+        if (permission === "granted") {
+            notify.success("Notifications enabled");
             return;
         }
 
-        const registration = await navigator.serviceWorker.ready;
-
-        await registration.showNotification(title, {
-            body,
-            icon: "/android-chrome-192x192.png",
-            badge: "/favicon-32x32.png",
-            tag: "medicore-emergency-alert",
-            data: {
-                url: "/dashboard",
-                patientId: criticalPatient.id,
-            },
+        notify.error("Notifications are not enabled", {
+            description:
+                permission === "denied"
+                    ? "Open browser site settings to allow notifications for this app."
+                    : "Allow notifications to receive appointment alerts.",
         });
+    };
 
-        notify.success("Emergency alert simulated", {
-            description: "The service worker displayed the notification.",
-        });
+    const handleSendTestNotification = async () => {
+        if (notificationPermission !== "granted") {
+            await handleEnableNotifications();
+        }
+
+        if (!("Notification" in window) || Notification.permission !== "granted") {
+            return;
+        }
+
+        try {
+            await showServiceWorkerNotification("Medicore notifications are working", {
+                body: "Appointment alerts will appear here.",
+                icon: "/android-chrome-192x192.png",
+                badge: "/favicon-32x32.png",
+                tag: `medicore-test-${Date.now()}`,
+                data: {
+                    url: "/dashboard",
+                },
+            });
+            notify.success("Test notification sent");
+        } catch {
+            notify.error("Could not send test notification", {
+                description: "The service worker may not be registered or browser notifications may be blocked.",
+            });
+        }
     };
 
     const openAppointmentModal = (dateKey: string) => {
@@ -582,12 +653,14 @@ export default function Dashboard() {
         setSelectedAppointmentDateKey(dateKey);
         setAppointmentPatientId(appointment?.patientId ?? patientOptions[0]?.value ?? "");
         setAppointmentDoctorId(appointment?.doctorId ?? doctorOptions[0]?.value ?? "");
+        setIsEditingExistingAppointment(Boolean(appointment));
     };
 
     const closeAppointmentModal = () => {
         setSelectedAppointmentDateKey(null);
         setAppointmentPatientId("");
         setAppointmentDoctorId("");
+        setIsEditingExistingAppointment(false);
     };
 
     const saveAppointment = async () => {
@@ -612,9 +685,6 @@ export default function Dashboard() {
                 doc(db, COLLECTIONS.APPOINTMENTS, selectedAppointmentDateKey),
                 nextAppointment,
             );
-            notify.success("Appointment scheduled", {
-                description: `${getFullName(patient)} with ${doctor.displayName}`,
-            });
             closeAppointmentModal();
         } catch {
             notify.error("Could not schedule appointment", {
@@ -626,7 +696,6 @@ export default function Dashboard() {
     const removeAppointment = async (dateKey: string) => {
         try {
             await deleteDoc(doc(db, COLLECTIONS.APPOINTMENTS, dateKey));
-            notify.success("Appointment removed");
 
             if (selectedAppointmentDateKey === dateKey) {
                 closeAppointmentModal();
@@ -653,16 +722,6 @@ export default function Dashboard() {
                         Snapshot refreshed through {formatDateTime(operationalNow)}
                     </p>
                 </div>
-
-                {showUserDirectory && (
-                    <button
-                        onClick={handleSimulateEmergencyAlert}
-                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[#0b1f4d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#102a63] active:scale-[0.98]"
-                    >
-                        <BellRing className="h-4 w-4" />
-                        Simulate Emergency Alert
-                    </button>
-                )}
             </div>
 
             {currentProfile && (
@@ -684,6 +743,47 @@ export default function Dashboard() {
                             </Badge>
                         </div>
                     </div>
+                    {currentDoctor && (
+                        <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                                    Appointment alerts
+                                </p>
+                                <div className="mt-1 flex flex-wrap items-center gap-2">
+                                    <Badge tone={notificationStatus.tone}>
+                                        {notificationStatus.label}
+                                    </Badge>
+                                    <Badge tone={isServiceWorkerReady ? "green" : "amber"}>
+                                        {isServiceWorkerReady ? "Service worker ready" : "Service worker not ready"}
+                                    </Badge>
+                                    {notificationPermission === "denied" && (
+                                        <span className="text-xs text-gray-500">
+                                            Enable notifications in browser site settings.
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                            {notificationPermission !== "granted" && (
+                                <button
+                                    type="button"
+                                    onClick={handleEnableNotifications}
+                                    disabled={notificationPermission === "denied"}
+                                    className="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Enable notifications
+                                </button>
+                            )}
+                                <button
+                                    type="button"
+                                    onClick={handleSendTestNotification}
+                                    className="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]"
+                                >
+                                    Send test notification
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </section>
             )}
 
@@ -897,7 +997,9 @@ export default function Dashboard() {
                                                 {appointment && (
                                                     <div className="mt-3 rounded-md border border-[#0b1f4d]/10 bg-[#0b1f4d]/5 p-2 text-xs text-[#0b1f4d]">
                                                         <p className="truncate font-semibold">{getPatientName(appointment.patientId)}</p>
-                                                        <p className="mt-1 truncate text-[#0b1f4d]/70">{getDoctorName(appointment.doctorId)}</p>
+                                                        {currentStaff && (
+                                                            <p className="mt-1 truncate text-[#0b1f4d]/70">{getDoctorName(appointment.doctorId)}</p>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -1000,7 +1102,7 @@ export default function Dashboard() {
 
             {selectedAppointmentDateKey && currentStaff && selectedAppointmentDate && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/30 px-4"
+                    className="fixed inset-0 z-50 flex items-center justify-center px-4"
                     onClick={closeAppointmentModal}
                 >
                     <div
@@ -1022,7 +1124,7 @@ export default function Dashboard() {
                             />
                         </div>
 
-                        {selectedAppointment && (
+                        {selectedAppointment && isEditingExistingAppointment && (
                             <div className="mt-4 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200">
                                 Current: {getPatientName(selectedAppointment.patientId)} with {getDoctorName(selectedAppointment.doctorId)}
                             </div>
@@ -1057,7 +1159,7 @@ export default function Dashboard() {
                         </div>
 
                         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                            {selectedAppointment && (
+                            {selectedAppointment && isEditingExistingAppointment && (
                                 <button
                                     type="button"
                                     onClick={() => removeAppointment(selectedAppointmentDateKey)}

@@ -28,9 +28,9 @@ import DataTable from "../components/ui/DataTable";
 import { PATIENT_STATUS } from "../constants/patient";
 import { THEME } from "../constants/theme";
 import { USER_STATUS } from "../constants/user";
-import { mockDoctors } from "../data/doctors";
-import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
+import useData from "../hooks/use-data";
+import useSimulatedLoading from "../hooks/use-simulated-loading";
 import {
     deleteAppointment,
     getAppointmentNotificationKey,
@@ -72,8 +72,26 @@ function getPatientDetailUrl(patient: Patient) {
     return `/patients?patientId=${encodeURIComponent(patient.id)}`;
 }
 
+function DashboardSkeleton() {
+    return (
+        <div className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <div key={index} className="h-30 animate-pulse rounded-xl bg-white shadow-sm" />
+                ))}
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="h-96 animate-pulse rounded-xl bg-white shadow-sm" />
+                <div className="h-96 animate-pulse rounded-xl bg-white shadow-sm" />
+            </div>
+        </div>
+    );
+}
+
 export default function Dashboard() {
     const { user } = useAuth();
+    const { admins, doctors, loading: dataLoading, patients, staff } = useData();
+    const screenLoading = useSimulatedLoading();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<DashboardTab>("alerts");
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -86,12 +104,12 @@ export default function Dashboard() {
     );
     const [isServiceWorkerReady, setIsServiceWorkerReady] = useState(false);
     const notifiedAppointmentIdsRef = useRef<Set<string>>(new Set());
-    const showUserDirectory = isAdminEmail(user?.email);
-    const currentDoctor = getDoctorByEmail(user?.email);
-    const currentStaff = getStaffByEmail(user?.email);
+    const showUserDirectory = admins.some((admin) => admin.email === user?.email);
+    const currentDoctor = getDoctorByEmail(user?.email, doctors);
+    const currentStaff = getStaffByEmail(user?.email, staff);
     const currentProfile = currentDoctor ?? currentStaff;
     const isStaffDashboard = Boolean(currentStaff);
-    const scopedPatients = getScopedPatientsForEmail(user?.email);
+    const scopedPatients = getScopedPatientsForEmail(user?.email, patients, doctors);
     const operationalNow = getLatestActivityDate(scopedPatients);
     const lastSevenDaysStart = new Date(
         operationalNow.getTime() - LAST_SEVEN_DAYS_IN_MS,
@@ -193,7 +211,7 @@ export default function Dashboard() {
             await Promise.all(
                 pendingNotifications.map((appointment) =>
                     showServiceWorkerNotification("New appointment scheduled", {
-                        body: `${getPatientName(appointment.patientId)} on ${formatLongDate(new Date(`${appointment.appointmentDate}T00:00:00`))}`,
+                        body: `${getPatientName(appointment.patientId, patients)} on ${formatLongDate(new Date(`${appointment.appointmentDate}T00:00:00`))}`,
                         icon: "/android-chrome-192x192.png",
                         badge: "/favicon-32x32.png",
                         tag: `medicore-appointment-${appointment.doctorId}-${appointment.patientId}-${appointment.appointmentDate}`,
@@ -215,7 +233,7 @@ export default function Dashboard() {
                 description: "Check browser notification and service worker permissions.",
             });
         });
-    }, [appointments, currentDoctor, notificationPermission]);
+    }, [appointments, currentDoctor, notificationPermission, patients]);
 
     const activePatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.ACTIVE,
@@ -234,8 +252,8 @@ export default function Dashboard() {
     const allVisits = scopedPatients.flatMap((patient) =>
         patient.visits.map((visit) => ({ patient, visit })),
     );
-    const criticalAlerts = getCriticalAlerts(scopedPatients);
-    const activityFeed = getActivityFeed(scopedPatients);
+    const criticalAlerts = getCriticalAlerts(scopedPatients, doctors);
+    const activityFeed = getActivityFeed(scopedPatients, doctors);
     const patientSnapshot = [...scopedPatients]
         .sort(
             (a, b) =>
@@ -259,7 +277,7 @@ export default function Dashboard() {
         label: getFullName(patient),
         value: patient.id,
     }));
-    const doctorOptions = mockDoctors.map((doctor) => ({
+    const doctorOptions = doctors.map((doctor) => ({
         label: doctor.displayName,
         value: doctor.id,
     }));
@@ -389,7 +407,7 @@ export default function Dashboard() {
         if (!selectedAppointmentDateKey) return;
 
         const patient = scopedPatients.find((item) => item.id === appointmentPatientId);
-        const doctor = mockDoctors.find((item) => item.id === appointmentDoctorId);
+        const doctor = doctors.find((item) => item.id === appointmentDoctorId);
 
         if (!patient || !doctor) {
             notify.error("Select a patient and doctor");
@@ -425,6 +443,10 @@ export default function Dashboard() {
             });
         }
     };
+
+    if (dataLoading || screenLoading) {
+        return <DashboardSkeleton />;
+    }
 
     return (
         <div className={`min-h-full ${THEME.SITE_BACKGROUND} text-gray-800`}>
@@ -656,6 +678,8 @@ export default function Dashboard() {
                                 appointments={visibleAppointments}
                                 calendarDays={calendarDays}
                                 canSchedule={Boolean(currentStaff)}
+                                doctors={doctors}
+                                patients={patients}
                                 onOpenAppointment={openAppointmentModal}
                                 onRemoveAppointment={removeAppointment}
                             />
@@ -757,9 +781,11 @@ export default function Dashboard() {
                     appointment={selectedAppointment}
                     appointmentDate={selectedAppointmentDate}
                     doctorId={appointmentDoctorId}
+                    doctors={doctors}
                     doctorOptions={doctorOptions}
                     isEditingExisting={isEditingExistingAppointment}
                     patientId={appointmentPatientId}
+                    patients={patients}
                     patientOptions={patientOptions}
                     onClose={closeAppointmentModal}
                     onDoctorChange={setAppointmentDoctorId}

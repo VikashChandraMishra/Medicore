@@ -1,5 +1,7 @@
 import type { SelectOption } from "../ui/Select";
 import type { Appointment } from "../../types/appointment";
+import type { Patient } from "../../types/patient";
+import type { User } from "../../types/user";
 import CloseButton from "../ui/CloseButton";
 import Select from "../ui/Select";
 import { formatLongDate } from "../../utils/date";
@@ -10,8 +12,10 @@ type AppointmentModalProps = {
     appointment?: Appointment;
     appointmentDate: Date;
     doctorId: string;
+    doctors: User[];
     isEditingExisting: boolean;
     patientId: string;
+    patients: Patient[];
     doctorOptions: SelectOption[];
     patientOptions: SelectOption[];
     onClose: () => void;
@@ -25,8 +29,10 @@ export default function AppointmentModal({
     appointment,
     appointmentDate,
     doctorId,
+    doctors,
     isEditingExisting,
     patientId,
+    patients,
     doctorOptions,
     patientOptions,
     onClose,
@@ -61,7 +67,7 @@ export default function AppointmentModal({
 
                 {appointment && isEditingExisting && (
                     <div className="mt-4 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                        Current: {getPatientName(appointment.patientId)} with {getDoctorName(appointment.doctorId)}
+                        Current: {getPatientName(appointment.patientId, patients)} with {getDoctorName(appointment.doctorId, doctors)}
                     </div>
                 )}
 

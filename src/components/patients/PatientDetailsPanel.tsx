@@ -2,6 +2,7 @@ import { useState, type RefObject } from "react";
 import CloseButton from "../ui/CloseButton";
 import { THEME } from "../../constants/theme";
 import type { Patient, Visit } from "../../types/patient";
+import type { User } from "../../types/user";
 import { formatLabel } from "../../utils/format";
 import { getFullName } from "../../utils/people";
 import {
@@ -12,6 +13,7 @@ import {
 
 type PatientDetailsPanelProps = {
     patient: Patient;
+    doctors: User[];
     isOpen: boolean;
     panelRef: RefObject<HTMLDivElement | null>;
     onClose: () => void;
@@ -20,6 +22,7 @@ type PatientDetailsPanelProps = {
 
 export default function PatientDetailsPanel({
     patient,
+    doctors,
     isOpen,
     panelRef,
     onClose,
@@ -104,7 +107,7 @@ export default function PatientDetailsPanel({
                                     <div>
                                         <p className="font-medium text-gray-800">{visit.type}</p>
                                         <p className="text-xs text-gray-500">
-                                            {getDoctorName(visit.doctorId)}
+                                            {getDoctorName(visit.doctorId, doctors)}
                                         </p>
                                     </div>
                                     <p className="shrink-0 text-xs text-gray-500">
@@ -129,7 +132,7 @@ export default function PatientDetailsPanel({
                                     <p className="font-medium">{visit.type}</p>
                                     <p className="text-gray-500">{formatPatientDate(visit.date)}</p>
                                 </div>
-                                <p className="text-gray-600">{getDoctorName(visit.doctorId)}</p>
+                                <p className="text-gray-600">{getDoctorName(visit.doctorId, doctors)}</p>
                                 <p className="mt-2">{visit.summary}</p>
                                 {visit.diagnosis && (
                                     <p className="mt-2">
@@ -172,7 +175,7 @@ export default function PatientDetailsPanel({
                                 </div>
                                 <p className="mt-1">{note.content}</p>
                                 <p className="mt-1 text-xs text-gray-500">
-                                    By {getDoctorName(note.doctorId)}
+                                    By {getDoctorName(note.doctorId, doctors)}
                                 </p>
                             </li>
                         ))}

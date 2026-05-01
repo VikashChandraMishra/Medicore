@@ -11,9 +11,9 @@ import {
     UsersRound,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router";
-import { isAdminEmail } from "../data/users";
 import { THEME } from "../constants/theme";
 import useAuth from "../hooks/use-auth";
+import useData from "../hooks/use-data";
 import { authService } from "../services/auth-service";
 import { getInitialsFromName } from "../utils/initials";
 import { getDoctorByEmail, getStaffByEmail } from "../utils/patient-scope";
@@ -30,14 +30,15 @@ function getDisplayName(email?: string | null, displayName?: string | null) {
 
 export default function Sidebar({ isOpen, onClose }: Props) {
     const { user } = useAuth();
+    const { admins, doctors, staff } = useData();
     const navigate = useNavigate();
-    const isAdmin = isAdminEmail(user?.email);
-    const doctor = getDoctorByEmail(user?.email);
-    const staff = getStaffByEmail(user?.email);
+    const isAdmin = admins.some((admin) => admin.email === user?.email);
+    const doctor = getDoctorByEmail(user?.email, doctors);
+    const staffMember = getStaffByEmail(user?.email, staff);
     const RoleIcon = doctor ? Stethoscope : isAdmin ? ShieldCheck : UserRound;
     const displayName = getDisplayName(user?.email, user?.displayName);
     const initials = getInitialsFromName(displayName);
-    const roleLabel = isAdmin ? "Admin" : doctor ? "Doctor" : staff ? "Staff" : "Clinic user";
+    const roleLabel = isAdmin ? "Admin" : doctor ? "Doctor" : staffMember ? "Staff" : "Clinic user";
     const navItems = [
         { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { to: "/patients", label: "Patient Records", icon: UsersRound },

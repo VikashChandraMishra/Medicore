@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { USER_ROLES, USER_STATUS, type UserRole, type UserStatus } from "../../constants/user";
 import { THEME } from "../../constants/theme";
-import { mockUsers } from "../../data/users";
+import useData from "../../hooks/use-data";
+import useSimulatedLoading from "../../hooks/use-simulated-loading";
 import type { User } from "../../types/user";
 import { getInitialsFromName } from "../../utils/initials";
 import Badge, { type BadgeTone } from "../ui/Badge";
@@ -61,6 +62,8 @@ type UserDirectoryProps = {
 };
 
 export default function UserDirectory({ className = "", embedded = false }: UserDirectoryProps) {
+    const { loading, users: allUsers } = useData();
+    const componentLoading = useSimulatedLoading();
     const [emailFilter, setEmailFilter] = useState("");
     const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -69,7 +72,7 @@ export default function UserDirectory({ className = "", embedded = false }: User
         () => {
             const email = emailFilter.trim().toLowerCase();
 
-            return mockUsers.filter((user) => {
+            return allUsers.filter((user) => {
                 const matchesEmail = !email || user.email.toLowerCase().includes(email);
                 const matchesRole = roleFilter === "all" || user.role === roleFilter;
                 const matchesStatus = statusFilter === "all" || user.status === statusFilter;
@@ -77,7 +80,7 @@ export default function UserDirectory({ className = "", embedded = false }: User
                 return matchesEmail && matchesRole && matchesStatus;
             });
         },
-        [emailFilter, roleFilter, statusFilter],
+        [allUsers, emailFilter, roleFilter, statusFilter],
     );
     const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
     const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -174,7 +177,15 @@ export default function UserDirectory({ className = "", embedded = false }: User
                         </div>
                     }
                 >
-                    {paginatedUsers.map((user, index) => (
+                    {loading || componentLoading ? (
+                        Array.from({ length: 6 }).map((_, index) => (
+                            <tr key={index}>
+                                <td colSpan={6} className="px-5 py-4">
+                                    <div className="h-10 animate-pulse rounded-lg bg-gray-100" />
+                                </td>
+                            </tr>
+                        ))
+                    ) : paginatedUsers.map((user, index) => (
                         <tr key={user.id} className={`transition ${THEME.HOVER_BACKGROUND}`}>
                             <td className="whitespace-nowrap px-5 py-4 text-gray-500">
                                 {pageStart + index + 1}

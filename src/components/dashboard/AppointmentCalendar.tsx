@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
 import type { Appointment } from "../../types/appointment";
+import type { Patient } from "../../types/patient";
+import type { User } from "../../types/user";
 import type { CalendarDay } from "../../utils/calendar";
 import { WEEKDAYS } from "../../utils/calendar";
 import { getDateKey } from "../../utils/date";
@@ -10,6 +12,8 @@ type AppointmentCalendarProps = {
     appointments: Appointment[];
     calendarDays: CalendarDay[];
     canSchedule: boolean;
+    doctors: User[];
+    patients: Patient[];
     onOpenAppointment: (dateKey: string) => void;
     onRemoveAppointment: (dateKey: string) => void;
 };
@@ -18,6 +22,8 @@ export default function AppointmentCalendar({
     appointments,
     calendarDays,
     canSchedule,
+    doctors,
+    patients,
     onOpenAppointment,
     onRemoveAppointment,
 }: AppointmentCalendarProps) {
@@ -89,9 +95,9 @@ export default function AppointmentCalendar({
                             </div>
                             {appointment && (
                                 <div className="mt-3 rounded-md bg-[#0b1f4d]/5 p-2 text-xs text-[#0b1f4d]">
-                                    <p className="truncate font-semibold">{getPatientName(appointment.patientId)}</p>
+                                    <p className="truncate font-semibold">{getPatientName(appointment.patientId, patients)}</p>
                                     {canSchedule && (
-                                        <p className="mt-1 truncate text-[#0b1f4d]/70">{getDoctorName(appointment.doctorId)}</p>
+                                        <p className="mt-1 truncate text-[#0b1f4d]/70">{getDoctorName(appointment.doctorId, doctors)}</p>
                                     )}
                                 </div>
                             )}

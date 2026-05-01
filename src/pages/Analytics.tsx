@@ -26,7 +26,8 @@ import Badge, { type BadgeTone } from "../components/ui/Badge";
 import Select from "../components/ui/Select";
 import { GENDERS, NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
 import { THEME } from "../constants/theme";
-import { mockPatients } from "../data/patients";
+import useData from "../hooks/use-data";
+import useSimulatedLoading from "../hooks/use-simulated-loading";
 import type { Patient, Visit } from "../types/patient";
 import { useMemo, useState } from "react";
 
@@ -66,8 +67,8 @@ function formatShortDate(date: Date) {
     }).format(date);
 }
 
-function getLatestActivityDate() {
-    const dates = mockPatients.flatMap((patient) => [
+function getLatestActivityDate(patients: Patient[]) {
+    const dates = patients.flatMap((patient) => [
         patient.createdAt,
         patient.updatedAt,
         ...(patient.lastVisitAt ? [patient.lastVisitAt] : []),
@@ -97,7 +98,7 @@ function getTimelineData(
     );
     const bucketSize = daysInRange > 100 ? 7 : 1;
     const buckets = new Map<string, { date: string; visits: number; patients: number }>();
-    const safeStart = startDate.getTime() === 0 ? getEarliestDataDate() : startDate;
+    const safeStart = startDate.getTime() === 0 ? getEarliestDataDate(patients) : startDate;
     const cursor = new Date(safeStart);
 
     cursor.setHours(0, 0, 0, 0);
@@ -146,8 +147,8 @@ function getTimelineData(
     return Array.from(buckets.values());
 }
 
-function getEarliestDataDate() {
-    const dates = mockPatients.flatMap((patient) => [
+function getEarliestDataDate(patients: Patient[]) {
+    const dates = patients.flatMap((patient) => [
         patient.createdAt,
         ...patient.visits.map((visit) => visit.date),
     ]);
@@ -192,33 +193,48 @@ function EmptyChart({ message }: { message: string }) {
     );
 }
 
+function AnalyticsSkeleton() {
+    return (
+        <div className="space-y-4">
+            <div className="h-24 animate-pulse rounded-xl bg-white shadow-sm" />
+            <div className="grid gap-4 lg:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="h-80 animate-pulse rounded-xl bg-white shadow-sm" />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function Analytics() {
+    const { loading, patients } = useData();
+    const screenLoading = useSimulatedLoading();
     const [dateRange, setDateRange] = useState<DateRange>("90d");
     const [visitType, setVisitType] = useState<VisitFilter>("all");
     const [status, setStatus] = useState<StatusFilter>("all");
     const [activeTab, setActiveTab] = useState<AnalyticsTab>("charts");
 
-    const latestActivityDate = getLatestActivityDate();
+    const latestActivityDate = getLatestActivityDate(patients);
     const rangeStart = getRangeStart(dateRange, latestActivityDate);
 
     const filteredPatients = useMemo(() => {
-        return mockPatients.filter((patient) => {
+        return patients.filter((patient) => {
             const matchesStatus = status === "all" || patient.status === status;
             const isInRange = patient.createdAt >= rangeStart || patient.updatedAt >= rangeStart;
 
             return matchesStatus && (dateRange === "all" || isInRange);
         });
-    }, [dateRange, rangeStart, status]);
+    }, [dateRange, patients, rangeStart, status]);
 
     const filteredVisits = useMemo(() => {
-        return mockPatients.flatMap((patient) =>
+        return patients.flatMap((patient) =>
             patient.visits
                 .filter((visit) => dateRange === "all" || visit.date >= rangeStart)
                 .filter((visit) => visitType === "all" || visit.type === visitType)
                 .filter(() => status === "all" || patient.status === status)
                 .map((visit) => ({ patient, visit })),
         );
-    }, [dateRange, rangeStart, status, visitType]);
+    }, [dateRange, patients, rangeStart, status, visitType]);
 
     const timelineData = getTimelineData(
         filteredPatients,
@@ -308,6 +324,10 @@ export default function Analytics() {
         { label: "High-risk", value: riskPatients.length, icon: HeartPulse },
         { label: "Policies Expiring Soon", value: expiringSoon.length, icon: ShieldCheck },
     ];
+
+    if (loading || screenLoading) {
+        return <AnalyticsSkeleton />;
+    }
 
     return (
         <div className={`min-h-full ${THEME.SITE_BACKGROUND} text-gray-800`}>

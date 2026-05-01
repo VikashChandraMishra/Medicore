@@ -17,7 +17,9 @@ import DataTable from "../components/ui/DataTable";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
 import { THEME } from "../constants/theme";
 import useAuth from "../hooks/use-auth";
+import useData from "../hooks/use-data";
 import useDebounce from "../hooks/use-debounce";
+import useSimulatedLoading from "../hooks/use-simulated-loading";
 import type { Patient, Visit } from "../types/patient";
 import { formatLabel } from "../utils/format";
 import { getInitialsFromName } from "../utils/initials";
@@ -47,6 +49,8 @@ function getStatusTone(status: PatientStatus): BadgeTone {
 
 export default function Patients() {
     const { user } = useAuth();
+    const { doctors, loading: dataLoading, patients } = useData();
+    const screenLoading = useSimulatedLoading();
     const [searchParams] = useSearchParams();
     const [view, setView] = useState<"list" | "grid">("grid");
     const [search, setSearch] = useState("");
@@ -59,15 +63,14 @@ export default function Patients() {
     const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [loading, setLoading] = useState(true);
     const detailsRef = useRef<HTMLDivElement | null>(null);
     const patientSelectionRef = useRef<HTMLDivElement | null>(null);
     const closeTimerRef = useRef<number | null>(null);
 
     const debouncedSearch = useDebounce(search);
     const scopedPatients = useMemo(
-        () => getScopedPatientsForEmail(user?.email),
-        [user?.email],
+        () => getScopedPatientsForEmail(user?.email, patients, doctors),
+        [doctors, patients, user?.email],
     );
 
     const ageFilterError = getAgeFilterError(minAgeFilter, maxAgeFilter);
@@ -87,11 +90,6 @@ export default function Patients() {
         setMaxAgeFilter("");
         setSortBy(SORT_OPTIONS.NONE);
     };
-
-    useEffect(() => {
-        const t = setTimeout(() => setLoading(false), 800);
-        return () => clearTimeout(t);
-    }, []);
 
     useEffect(() => {
         return () => {
@@ -168,6 +166,7 @@ export default function Patients() {
     const filtered = useMemo(() => {
         return filterPatients(scopedPatients, {
             ageFilterError,
+            allPatients: scopedPatients,
             maxAgeFilter,
             minAgeFilter,
             roomFilter,
@@ -177,8 +176,8 @@ export default function Patients() {
     }, [ageFilterError, debouncedSearch, maxAgeFilter, minAgeFilter, roomFilter, scopedPatients, statusFilter]);
 
     const sortedPatients = useMemo(() => {
-        return sortPatients(filtered, sortBy);
-    }, [filtered, sortBy]);
+        return sortPatients(filtered, sortBy, scopedPatients);
+    }, [filtered, scopedPatients, sortBy]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -228,10 +227,10 @@ export default function Patients() {
                 />
 
                 <div ref={patientSelectionRef}>
-                    {loading ? (
+                    {dataLoading || screenLoading ? (
                         <div className="grid md:grid-cols-3 gap-4">
                             {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="h-40 bg-gray-200 animate-pulse rounded-xl" />
+                                <div key={i} className="h-40 animate-pulse rounded-xl bg-white shadow-sm" />
                             ))}
                         </div>
                     ) : sortedPatients.length === 0 && view === "grid" ? (
@@ -335,7 +334,7 @@ export default function Patients() {
                                         </tr>
                                     ) : (
                                         paginatedPatients.map((patient, index) => {
-                                            const doctor = getDoctorMeta(patient);
+                                            const doctor = getDoctorMeta(patient, doctors);
                                             const insured = patient.insurance.isActive;
                                             const isSelected = selected?.id === patient.id && isDetailsOpen;
 
@@ -376,7 +375,7 @@ export default function Patients() {
                                                         {getPrimaryCondition(patient)}
                                                     </td>
                                                     <td className={`whitespace-nowrap px-3 py-3 font-medium ${getSelectedTextClass(isSelected, "text-gray-900")}`}>
-                                                        {getStableRoomNumber(patient)}
+                                                        {getStableRoomNumber(patient, scopedPatients)}
                                                     </td>
                                                     <td className="px-3 py-3">
                                                         <div className="flex items-center gap-3">
@@ -425,6 +424,7 @@ export default function Patients() {
                 {selected && (
                     <PatientDetailsPanel
                         patient={selected}
+                        doctors={doctors}
                         isOpen={isDetailsOpen}
                         panelRef={detailsRef}
                         onClose={closeDetails}
@@ -435,6 +435,7 @@ export default function Patients() {
                 {selectedVisit && (
                     <VisitDetailsModal
                         visit={selectedVisit}
+                        doctors={doctors}
                         onClose={() => setSelectedVisit(null)}
                     />
                 )}

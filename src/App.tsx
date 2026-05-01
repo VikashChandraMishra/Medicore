@@ -1,6 +1,7 @@
 import { RouterProvider } from "react-router";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
+import DataProvider from "./contexts/DataProvider";
 import { router } from "./router";
 
 function App() {
@@ -23,7 +24,9 @@ function App() {
         }}
       />
       <AuthProvider>
-        <RouterProvider router={router} />
+        <DataProvider>
+          <RouterProvider router={router} />
+        </DataProvider>
       </AuthProvider>
     </>
   );

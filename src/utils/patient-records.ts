@@ -1,7 +1,6 @@
 import { PATIENT_STATUS, type PatientStatus } from "../constants/patient";
-import { mockDoctors } from "../data/doctors";
-import { mockPatients } from "../data/patients";
 import type { Patient } from "../types/patient";
+import type { User } from "../types/user";
 import { formatLabel } from "./format";
 import { getFullName } from "./people";
 
@@ -42,17 +41,17 @@ export function getLatestVisit(patient: Patient) {
     return patient.visits[patient.visits.length - 1];
 }
 
-export function getDoctorName(doctorId?: string) {
+export function getDoctorName(doctorId: string | undefined, doctors: User[]) {
     if (!doctorId) return "Unassigned";
 
-    return mockDoctors.find((doctor) => doctor.id === doctorId)?.displayName ?? "Unassigned";
+    return doctors.find((doctor) => doctor.id === doctorId)?.displayName ?? "Unassigned";
 }
 
-export function getDoctorMeta(patient: Patient) {
+export function getDoctorMeta(patient: Patient, doctors: User[]) {
     const visit = getLatestVisit(patient);
 
     return {
-        name: getDoctorName(visit?.doctorId),
+        name: getDoctorName(visit?.doctorId, doctors),
         specialty: visit?.type ? formatLabel(visit.type) : "General",
     };
 }
@@ -64,8 +63,8 @@ function getRoomNumber(patient: Patient, index: number) {
     return `${prefix}-${number}`;
 }
 
-export function getStableRoomNumber(patient: Patient) {
-    const patientIndex = mockPatients.findIndex((item) => item.id === patient.id);
+export function getStableRoomNumber(patient: Patient, patients: Patient[]) {
+    const patientIndex = patients.findIndex((item) => item.id === patient.id);
     return getRoomNumber(patient, Math.max(0, patientIndex));
 }
 
@@ -100,6 +99,7 @@ export function getAgeFilterError(minAgeFilter: string, maxAgeFilter: string) {
 
 type PatientFilterParams = {
     ageFilterError: string;
+    allPatients: Patient[];
     maxAgeFilter: string;
     minAgeFilter: string;
     roomFilter: string;
@@ -129,7 +129,7 @@ export function filterPatients(patients: Patient[], params: PatientFilterParams)
         const matchesStatus =
             params.statusFilter === "all" || patient.status === params.statusFilter;
         const matchesRoom =
-            params.roomFilter === "all" || getStableRoomNumber(patient) === params.roomFilter;
+            params.roomFilter === "all" || getStableRoomNumber(patient, params.allPatients) === params.roomFilter;
         if (params.ageFilterError) return false;
 
         const minAge = Number(params.minAgeFilter);
@@ -149,7 +149,7 @@ export function filterPatients(patients: Patient[], params: PatientFilterParams)
     });
 }
 
-export function sortPatients(patients: Patient[], sortBy: SortOption) {
+export function sortPatients(patients: Patient[], sortBy: SortOption, allPatients: Patient[]) {
     if (sortBy === SORT_OPTIONS.NONE) return patients;
 
     return [...patients].sort((a, b) => {
@@ -162,7 +162,7 @@ export function sortPatients(patients: Patient[], sortBy: SortOption) {
             return (b.lastVisitAt?.getTime() ?? 0) - (a.lastVisitAt?.getTime() ?? 0);
         }
         if (sortBy === SORT_OPTIONS.ROOM_ASC) {
-            return getStableRoomNumber(a).localeCompare(getStableRoomNumber(b), undefined, {
+            return getStableRoomNumber(a, allPatients).localeCompare(getStableRoomNumber(b, allPatients), undefined, {
                 numeric: true,
             });
         }

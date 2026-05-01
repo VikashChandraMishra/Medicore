@@ -68,7 +68,7 @@ export default function PatientFiltersToolbar({
     const roomSelectOptions = [
         { label: "All Rooms", value: "all" },
         ...patients.map((patient) => {
-            const room = getStableRoomNumber(patient);
+            const room = getStableRoomNumber(patient, patients);
 
             return {
                 label: room,

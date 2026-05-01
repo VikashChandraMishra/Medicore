@@ -1,5 +1,6 @@
 import { NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
 import type { Note, Patient, Visit } from "../types/patient";
+import type { User } from "../types/user";
 import { formatShortDate, getDateKey } from "./date";
 import { formatLabel } from "./format";
 import { getDoctorName, getFullName } from "./people";
@@ -44,8 +45,8 @@ export function getLatestActivityDate(patients: Patient[]) {
     return new Date(Math.max(...dates.map((date) => date.getTime())));
 }
 
-function createTimelineItemFromVisit(patient: Patient, visit: Visit, index: number): TimelineItem {
-    const doctorName = getDoctorName(visit.doctorId);
+function createTimelineItemFromVisit(patient: Patient, visit: Visit, index: number, doctors: User[]): TimelineItem {
+    const doctorName = getDoctorName(visit.doctorId, doctors);
 
     return {
         id: `${patient.id}-visit-${index}`,
@@ -58,8 +59,8 @@ function createTimelineItemFromVisit(patient: Patient, visit: Visit, index: numb
     };
 }
 
-function createTimelineItemFromNote(patient: Patient, note: Note, index: number): TimelineItem {
-    const doctorName = getDoctorName(note.doctorId);
+function createTimelineItemFromNote(patient: Patient, note: Note, index: number, doctors: User[]): TimelineItem {
+    const doctorName = getDoctorName(note.doctorId, doctors);
 
     return {
         id: `${patient.id}-note-${index}`,
@@ -72,17 +73,17 @@ function createTimelineItemFromNote(patient: Patient, note: Note, index: number)
     };
 }
 
-export function getActivityFeed(patients: Patient[]) {
+export function getActivityFeed(patients: Patient[], doctors: User[]) {
     return patients
         .flatMap((patient) => [
-            ...patient.visits.map((visit, index) => createTimelineItemFromVisit(patient, visit, index)),
-            ...patient.notes.map((note, index) => createTimelineItemFromNote(patient, note, index)),
+            ...patient.visits.map((visit, index) => createTimelineItemFromVisit(patient, visit, index, doctors)),
+            ...patient.notes.map((note, index) => createTimelineItemFromNote(patient, note, index, doctors)),
         ])
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, 8);
 }
 
-export function getCriticalAlerts(patients: Patient[]) {
+export function getCriticalAlerts(patients: Patient[], doctors: User[]) {
     const alerts = patients.flatMap((patient) => {
         const latestVisit = getLatestVisit(patient);
         const patientAlerts: CriticalAlert[] = [];
@@ -122,7 +123,7 @@ export function getCriticalAlerts(patients: Patient[]) {
                     patient,
                     issue: note.content,
                     lastVisitAt: latestVisit?.date,
-                    source: `Warning by ${getDoctorName(note.doctorId)}`,
+                    source: `Warning by ${getDoctorName(note.doctorId, doctors)}`,
                     severity: "warning",
                 });
             });

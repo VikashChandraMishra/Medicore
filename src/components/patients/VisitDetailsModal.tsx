@@ -1,14 +1,16 @@
 import { Activity, Stethoscope, Thermometer } from "lucide-react";
 import type { Visit } from "../../types/patient";
+import type { User } from "../../types/user";
 import { formatPatientDate, getDoctorName } from "../../utils/patient-records";
 import CloseButton from "../ui/CloseButton";
 
 type VisitDetailsModalProps = {
     visit: Visit;
+    doctors: User[];
     onClose: () => void;
 };
 
-export default function VisitDetailsModal({ visit, onClose }: VisitDetailsModalProps) {
+export default function VisitDetailsModal({ visit, doctors, onClose }: VisitDetailsModalProps) {
     return (
         <div
             className="fixed inset-0 z-40 flex items-center justify-center px-4"
@@ -27,7 +29,7 @@ export default function VisitDetailsModal({ visit, onClose }: VisitDetailsModalP
                             {visit.type}
                         </h3>
                         <p className="text-sm text-gray-500">
-                            {getDoctorName(visit.doctorId)}
+                            {getDoctorName(visit.doctorId, doctors)}
                         </p>
                     </div>
                     <CloseButton

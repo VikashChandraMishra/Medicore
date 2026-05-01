@@ -1,6 +1,8 @@
+import { THEME } from "../constants/theme";
+
 export default function Landing() {
     return (
-        <div className="min-h-screen bg-gray-50 text-gray-800">
+        <div className={`min-h-screen ${THEME.SITE_BACKGROUND} text-gray-800`}>
             {/* Hero */}
             <section className="text-center px-6 mt-16">
                 <h1 className="text-4xl md:text-5xl font-bold mb-6">
@@ -24,21 +26,21 @@ export default function Landing() {
 
             {/* Features */}
             <section className="max-w-6xl mx-auto px-6 mt-20 grid md:grid-cols-3 gap-6">
-                <div className="p-6 bg-white rounded-xl border">
+                <div className="p-6 bg-white rounded-xl">
                     <h3 className="font-semibold text-lg mb-2">Patient Management</h3>
                     <p className="text-sm text-gray-500">
                         Organize and access patient records with ease.
                     </p>
                 </div>
 
-                <div className="p-6 bg-white rounded-xl border">
+                <div className="p-6 bg-white rounded-xl">
                     <h3 className="font-semibold text-lg mb-2">Analytics Dashboard</h3>
                     <p className="text-sm text-gray-500">
                         Track key metrics and gain actionable insights.
                     </p>
                 </div>
 
-                <div className="p-6 bg-white rounded-xl border">
+                <div className="p-6 bg-white rounded-xl">
                     <h3 className="font-semibold text-lg mb-2">Smart Scheduling</h3>
                     <p className="text-sm text-gray-500">
                         Manage appointments and availability efficiently.

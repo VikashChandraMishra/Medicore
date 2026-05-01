@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { THEME } from "../../constants/theme";
 
 export type SelectOption = {
     label: string;
@@ -49,7 +50,7 @@ export default function Select({
                 aria-label={ariaLabel}
                 aria-expanded={isOpen}
                 onClick={() => setIsOpen((open) => !open)}
-                className="flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-left text-sm text-gray-800 transition hover:bg-gray-50 active:scale-[0.99] focus-visible:border-[#0b1f4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f4d]/10"
+                className={`flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-left text-sm text-gray-800 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.99] focus-visible:border-[#0b1f4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f4d]/10`}
             >
                 <span className="truncate">{selected?.label}</span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />

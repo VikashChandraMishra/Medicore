@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet } from "react-router";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
+import { THEME } from "./constants/theme";
 import useAuth from "./hooks/use-auth";
 
 export default function AppLayout() {
@@ -28,8 +29,8 @@ export default function AppLayout() {
     }, [shouldShowSidebar]);
 
     return (
-        <div className="h-screen overflow-hidden bg-gray-50 text-gray-800 flex flex-col">
-            <Header />
+        <div className={`h-screen overflow-hidden ${THEME.SITE_BACKGROUND} text-gray-800 flex flex-col`}>
+            {!user && <Header />}
 
             <div className="flex min-h-0 flex-1 overflow-hidden">
                 {shouldShowSidebar && (
@@ -37,7 +38,7 @@ export default function AppLayout() {
                 )}
 
                 <main className="relative z-0 min-w-0 flex-1 overflow-y-auto transition-all duration-300">
-                    <div className="mx-auto min-h-full w-full max-w-7xl p-6 pb-8">
+                    <div className="mx-auto min-h-full w-full max-w-7xl p-4 pb-8 sm:p-6">
                         <Outlet />
                     </div>
                 </main>

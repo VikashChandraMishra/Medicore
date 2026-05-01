@@ -4,7 +4,7 @@ type Props = {
 
 export default function ChartCard({ title }: Props) {
     return (
-        <div className="p-6 bg-white rounded-xl border h-64">
+        <div className="p-6 bg-white rounded-xl h-64">
             <h3 className="font-semibold mb-4">{title}</h3>
 
             {/* Placeholder */}

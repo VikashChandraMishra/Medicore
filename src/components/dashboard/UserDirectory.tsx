@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { USER_ROLES, USER_STATUS, type UserRole, type UserStatus } from "../../constants/user";
+import { THEME } from "../../constants/theme";
 import { mockUsers } from "../../data/users";
 import type { User } from "../../types/user";
 import { getInitialsFromName } from "../../utils/initials";
@@ -102,7 +103,7 @@ export default function UserDirectory({ className = "", embedded = false }: User
 
     return (
         <section className={className}>
-            <div className={embedded ? "" : "overflow-hidden rounded-lg border border-gray-200 bg-white"}>
+            <div className={embedded ? "" : "overflow-hidden rounded-lg bg-white"}>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                     <div>
                         <h2 className="text-lg font-semibold text-gray-950">Users</h2>
@@ -134,7 +135,7 @@ export default function UserDirectory({ className = "", embedded = false }: User
                 </div>
 
                 <DataTable
-                    outerClassName="mx-5 mb-4 overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200"
+                    outerClassName="mx-5 mb-4 overflow-hidden rounded-2xl bg-white"
                     headerRowClassName="border-b border-gray-100 text-xs font-medium text-gray-500"
                     columns={
                         <>
@@ -154,7 +155,7 @@ export default function UserDirectory({ className = "", embedded = false }: User
                                     type="button"
                                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                     disabled={safeCurrentPage === 1}
-                                    className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className={`cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                                 >
                                     Previous
                                 </button>
@@ -165,7 +166,7 @@ export default function UserDirectory({ className = "", embedded = false }: User
                                     type="button"
                                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                     disabled={safeCurrentPage === totalPages}
-                                    className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className={`cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                                 >
                                     Next
                                 </button>
@@ -174,7 +175,7 @@ export default function UserDirectory({ className = "", embedded = false }: User
                     }
                 >
                     {paginatedUsers.map((user, index) => (
-                        <tr key={user.id} className="transition hover:bg-gray-50">
+                        <tr key={user.id} className={`transition ${THEME.HOVER_BACKGROUND}`}>
                             <td className="whitespace-nowrap px-5 py-4 text-gray-500">
                                 {pageStart + index + 1}
                             </td>

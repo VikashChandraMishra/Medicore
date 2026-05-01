@@ -21,6 +21,7 @@ import DataTable from "../components/ui/DataTable";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import { PATIENT_STATUS, PatientStatus } from "../constants/patient";
+import { THEME } from "../constants/theme";
 import { mockDoctors } from "../data/doctors";
 import { mockPatients } from "../data/patients";
 import useAuth from "../hooks/use-auth";
@@ -375,7 +376,7 @@ export default function Patients() {
     const recordSummary = `Showing ${visibleStart} to ${visibleEnd} of ${sortedPatients.length} patients`;
 
     return (
-        <div className="relative min-h-full bg-gray-50">
+        <div className={`relative min-h-full ${THEME.SITE_BACKGROUND}`}>
             <div className="max-w-7xl mx-auto">
                 <div className="my-2">
                     <h1 className="text-2xl font-semibold text-gray-950">Patients</h1>
@@ -448,7 +449,7 @@ export default function Patients() {
                             type="button"
                             onClick={clearAllFilters}
                             disabled={!hasActiveFilters}
-                            className="h-9 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                            className={`h-9 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                         >
                             Clear all
                         </button>
@@ -501,9 +502,9 @@ export default function Patients() {
                                     <div
                                         key={patient.id}
                                         onClick={() => togglePatientSelection(patient)}
-                                        className={`cursor-pointer rounded-lg p-4 ring-1 ring-gray-200 transition active:scale-[0.99] ${isSelected
+                                        className={`cursor-pointer rounded-lg p-4 transition active:scale-[0.99] ${isSelected
                                             ? "bg-[#0b1f4d] text-white"
-                                            : "bg-white text-gray-800 hover:bg-gray-50 hover:text-[#0b1f4d]"
+                                            : `bg-white text-gray-800 ${THEME.HOVER_BACKGROUND} hover:text-[#0b1f4d]`
                                             }`}
                                     >
                                         <div className="mb-3 flex items-center justify-between gap-3">
@@ -551,7 +552,7 @@ export default function Patients() {
                                     type="button"
                                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                     disabled={safeCurrentPage === 1}
-                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                                     aria-label="Previous page"
                                 >
                                     <ChevronLeft className="h-4 w-4" />
@@ -566,7 +567,7 @@ export default function Patients() {
                                             onClick={() => setCurrentPage(page)}
                                             className={`h-10 min-w-10 cursor-pointer rounded-md border px-3 font-medium transition active:scale-[0.98] ${safeCurrentPage === page
                                                 ? "border-[#0b1f4d] bg-[#0b1f4d] text-white"
-                                                : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                                                : `border-gray-200 bg-white text-gray-700 ${THEME.HOVER_BACKGROUND}`
                                                 }`}
                                         >
                                             {page}
@@ -577,7 +578,7 @@ export default function Patients() {
                                     type="button"
                                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                     disabled={safeCurrentPage === totalPages}
-                                    className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className={`grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                                     aria-label="Next page"
                                 >
                                     <ChevronRight className="h-4 w-4" />
@@ -611,7 +612,7 @@ export default function Patients() {
                                                 setCurrentPage((page) => Math.max(1, page - 1))
                                             }
                                             disabled={safeCurrentPage === 1}
-                                            className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                            className={`cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                                         >
                                             Previous
                                         </button>
@@ -623,7 +624,7 @@ export default function Patients() {
                                                 setCurrentPage((page) => Math.min(totalPages, page + 1))
                                             }
                                             disabled={safeCurrentPage === totalPages}
-                                            className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                                            className={`cursor-pointer rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                                         >
                                             Next
                                         </button>
@@ -652,7 +653,7 @@ export default function Patients() {
                                                     onClick={() => togglePatientSelection(patient)}
                                                     className={`cursor-pointer transition active:bg-gray-100 ${isSelected
                                                         ? "bg-[#0b1f4d] text-white hover:bg-[#0b1f4d]"
-                                                        : "hover:bg-gray-50/80"
+                                                        : THEME.HOVER_BACKGROUND
                                                         }`}
                                                 >
                                                     <td className={`whitespace-nowrap px-3 py-3 ${getSelectedTextClass(isSelected, "text-gray-500")}`}>
@@ -732,7 +733,7 @@ export default function Patients() {
                 {selected && (
                     <div
                         ref={detailsRef}
-                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl ring-1 ring-gray-200/70 transition-all duration-300 ease-out ${isDetailsOpen
+                        className={`fixed right-0 top-18.25 bottom-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl transition-all duration-300 ease-out ${isDetailsOpen
                             ? "translate-x-0 opacity-100"
                             : "translate-x-full opacity-0"
                             }`}
@@ -780,13 +781,13 @@ export default function Patients() {
                                 <div className="flex overflow-hidden rounded-md border border-gray-200">
                                     <button
                                         onClick={() => setVisitView("timeline")}
-                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "timeline" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"}`}
+                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "timeline" ? "bg-[#0b1f4d] text-white" : `text-gray-500 ${THEME.HOVER_BACKGROUND} hover:text-gray-800`}`}
                                     >
                                         Timeline
                                     </button>
                                     <button
                                         onClick={() => setVisitView("cards")}
-                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "cards" ? "bg-[#0b1f4d] text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"}`}
+                                        className={`cursor-pointer px-3 py-1.5 text-xs transition active:scale-[0.98] ${visitView === "cards" ? "bg-[#0b1f4d] text-white" : `text-gray-500 ${THEME.HOVER_BACKGROUND} hover:text-gray-800`}`}
                                     >
                                         Detail
                                     </button>

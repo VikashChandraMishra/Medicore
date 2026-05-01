@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import AuthErrorModal from "../../components/auth/AuthErrorModal";
 import Input from "../../components/ui/Input";
+import { THEME } from "../../constants/theme";
 import useAuth from "../../hooks/use-auth";
 import { authService, type AuthErrorDetails } from "../../services/auth-service";
 import { notify } from "../../utils/toast";
@@ -65,8 +66,8 @@ export default function Login() {
     };
 
     return (
-        <div className="flex h-full items-center justify-center bg-gray-50 px-6">
-            <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-8">
+        <div className={`flex h-full items-center justify-center ${THEME.SITE_BACKGROUND} px-6`}>
+            <div className="w-full max-w-md rounded-lg bg-white p-8">
                 <h1 className="mb-2 text-center text-3xl font-semibold text-gray-950">
                     Welcome back
                 </h1>

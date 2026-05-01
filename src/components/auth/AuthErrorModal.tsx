@@ -19,7 +19,7 @@ export default function AuthErrorModal({ error, onClose }: Props) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-2xl"
+                className="w-full max-w-md rounded-lg bg-white p-6 shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="mb-5 flex items-start justify-between gap-4">

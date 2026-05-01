@@ -25,6 +25,7 @@ import {
 import Badge, { type BadgeTone } from "../components/ui/Badge";
 import Select from "../components/ui/Select";
 import { GENDERS, NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
+import { THEME } from "../constants/theme";
 import { mockPatients } from "../data/patients";
 import type { Patient, Visit } from "../types/patient";
 import { useMemo, useState } from "react";
@@ -309,7 +310,7 @@ export default function Analytics() {
     ];
 
     return (
-        <div className="min-h-full bg-gray-50 text-gray-800">
+        <div className={`min-h-full ${THEME.SITE_BACKGROUND} text-gray-800`}>
             <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                     <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#0b1f4d]/8 px-3 py-1 text-sm font-medium text-[#0b1f4d]">
@@ -354,7 +355,7 @@ export default function Analytics() {
                     const Icon = metric.icon;
 
                     return (
-                        <div key={metric.label} className="rounded-xl bg-white p-3 ring-1 ring-gray-200">
+                        <div key={metric.label} className="rounded-xl bg-white p-3">
                             <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
                                 <Icon className="h-3.5 w-3.5" />
                                 {metric.label}
@@ -365,7 +366,7 @@ export default function Analytics() {
                 })}
             </section>
 
-            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <section className="mt-6 overflow-hidden rounded-lg bg-white">
                 <div className="flex gap-1 overflow-x-auto border-b border-gray-100 p-2" role="tablist" aria-label="Analytics sections">
                     {analyticsTabs.map((tab) => {
                         const isActive = activeTab === tab.value;
@@ -379,7 +380,7 @@ export default function Analytics() {
                                 onClick={() => setActiveTab(tab.value)}
                                 className={`shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition active:scale-[0.98] ${isActive
                                     ? "bg-[#0b1f4d] text-white"
-                                    : "text-gray-600 hover:bg-gray-50 hover:text-[#0b1f4d]"
+                                    : `text-gray-600 ${THEME.HOVER_BACKGROUND} hover:text-[#0b1f4d]`
                                     }`}
                             >
                                 {tab.label}
@@ -390,7 +391,7 @@ export default function Analytics() {
 
                 {activeTab === "charts" && (
                     <div className="grid gap-6 p-5 xl:grid-cols-2">
-                        <div className="rounded-lg border border-gray-200 bg-white">
+                        <div className="rounded-lg bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Time-Based Trends
@@ -447,7 +448,7 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white">
+                <div className="rounded-lg bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Visit Type Distribution
@@ -502,7 +503,7 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white">
+                <div className="rounded-lg bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">
                             Condition Insights
@@ -539,7 +540,7 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white">
+                <div className="rounded-lg bg-white">
                     <div className="border-b border-gray-100 px-5 py-4">
                         <h2 className="text-lg font-semibold text-gray-950">Demographics</h2>
                         <p className="text-sm text-gray-500">Age buckets and gender split</p>
@@ -616,7 +617,7 @@ export default function Analytics() {
 
                 {activeTab === "insurance" && (
                     <div className="p-5">
-                        <div className="rounded-lg border border-gray-200 bg-white">
+                        <div className="rounded-lg bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
@@ -681,7 +682,7 @@ export default function Analytics() {
 
                 {activeTab === "risk" && (
                     <div className="p-5">
-                        <div className="rounded-lg border border-gray-200 bg-white">
+                        <div className="rounded-lg bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-950">
@@ -737,7 +738,7 @@ export default function Analytics() {
                 )}
             </section>
 
-            <div className="mt-6 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+            <div className="mt-6 flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-gray-500">
                 <SlidersHorizontal className="h-4 w-4 text-[#0b1f4d]" />
                 Filters update charts, counts, condition rankings, demographics, insurance, and risk lists.
             </div>

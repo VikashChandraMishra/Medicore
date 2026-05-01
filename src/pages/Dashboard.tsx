@@ -30,6 +30,7 @@ import Select from "../components/ui/Select";
 import { db } from "../config/firebase-config";
 import { COLLECTIONS } from "../constants/collections";
 import { NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
+import { THEME } from "../constants/theme";
 import { USER_STATUS } from "../constants/user";
 import { mockDoctors } from "../data/doctors";
 import { mockPatients } from "../data/patients";
@@ -708,7 +709,7 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-full bg-gray-50 text-gray-800">
+        <div className={`min-h-full ${THEME.SITE_BACKGROUND} text-gray-800`}>
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#0b1f4d]/8 px-3 py-1 text-sm font-medium text-[#0b1f4d]">
@@ -725,7 +726,7 @@ export default function Dashboard() {
             </div>
 
             {currentProfile && (
-                <section className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
+                <section className="mb-6 rounded-lg bg-white p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
@@ -769,7 +770,7 @@ export default function Dashboard() {
                                     type="button"
                                     onClick={handleEnableNotifications}
                                     disabled={notificationPermission === "denied"}
-                                    className="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                                    className={`inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
                                 >
                                     Enable notifications
                                 </button>
@@ -777,7 +778,7 @@ export default function Dashboard() {
                                 <button
                                     type="button"
                                     onClick={handleSendTestNotification}
-                                    className="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]"
+                                    className={`inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98]`}
                                 >
                                     Send test notification
                                 </button>
@@ -792,7 +793,7 @@ export default function Dashboard() {
                     const Icon = metric.icon;
 
                     return (
-                        <div key={metric.label} className="rounded-xl bg-white p-3 ring-1 ring-gray-200">
+                        <div key={metric.label} className="rounded-xl bg-white p-3">
                             <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
                                 <Icon className="h-3.5 w-3.5" />
                                 {metric.label}
@@ -803,7 +804,7 @@ export default function Dashboard() {
                 })}
             </section>
 
-            <section className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <section className="mt-6 overflow-hidden rounded-lg bg-white">
                 <div className="flex gap-1 overflow-x-auto border-b border-gray-100 p-2" role="tablist" aria-label="Dashboard sections">
                     {dashboardTabs.map((tab) => {
                         const isActive = visibleActiveTab === tab.value;
@@ -817,7 +818,7 @@ export default function Dashboard() {
                                 onClick={() => setActiveTab(tab.value)}
                                 className={`shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition active:scale-[0.98] ${isActive
                                     ? "bg-[#0b1f4d] text-white"
-                                    : "text-gray-600 hover:bg-gray-50 hover:text-[#0b1f4d]"
+                                    : `text-gray-600 ${THEME.HOVER_BACKGROUND} hover:text-[#0b1f4d]`
                                     }`}
                             >
                                 {tab.label}
@@ -845,7 +846,7 @@ export default function Dashboard() {
                                     <Link
                                         key={alert.id}
                                         to={getPatientDetailUrl(alert.patient)}
-                                        className="flex cursor-pointer items-start gap-4 px-5 py-4 transition hover:bg-gray-50 active:bg-gray-100"
+                                        className={`flex cursor-pointer items-start gap-4 px-5 py-4 transition ${THEME.HOVER_BACKGROUND} active:bg-gray-100`}
                                     >
                                         <span className={`mt-1 rounded-md p-2 ${alert.severity === "critical" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
                                             {alert.severity === "critical" ? <HeartPulse className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
@@ -933,7 +934,7 @@ export default function Dashboard() {
                             </div>
                         </div>
                         <div className="px-5 py-4">
-                            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div className="overflow-hidden rounded-lg bg-white">
                                 <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
                                     {WEEKDAYS.map((weekday) => (
                                         <div key={weekday} className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -963,7 +964,7 @@ export default function Dashboard() {
                                                     event.preventDefault();
                                                     openAppointmentModal(dayKey);
                                                 }}
-                                                className={`relative min-h-28 border-b border-r border-gray-200 p-2 last:border-r-0 sm:min-h-32 ${canSchedule ? "cursor-pointer transition hover:bg-gray-50" : ""} ${day.isPast
+                                                className={`relative min-h-28 border-b border-r border-gray-200 p-2 last:border-r-0 sm:min-h-32 ${canSchedule ? `cursor-pointer transition ${THEME.HOVER_BACKGROUND}` : ""} ${day.isPast
                                                     ? "bg-gray-100 text-gray-400"
                                                     : day.isCurrentMonth
                                                         ? "bg-white text-gray-800"
@@ -977,7 +978,7 @@ export default function Dashboard() {
                                                             event.stopPropagation();
                                                             removeAppointment(dayKey);
                                                         }}
-                                                        className="absolute right-2 top-2 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-white text-gray-500 shadow-sm ring-1 ring-gray-200 transition hover:bg-red-50 hover:text-red-600 active:scale-[0.95]"
+                                                        className="absolute right-2 top-2 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-white text-gray-500 shadow-sm transition hover:bg-red-50 hover:text-red-600 active:scale-[0.95]"
                                                         aria-label="Remove appointment"
                                                         title="Remove appointment"
                                                     >
@@ -995,7 +996,7 @@ export default function Dashboard() {
                                                     </span>
                                                 </div>
                                                 {appointment && (
-                                                    <div className="mt-3 rounded-md border border-[#0b1f4d]/10 bg-[#0b1f4d]/5 p-2 text-xs text-[#0b1f4d]">
+                                                    <div className="mt-3 rounded-md bg-[#0b1f4d]/5 p-2 text-xs text-[#0b1f4d]">
                                                         <p className="truncate font-semibold">{getPatientName(appointment.patientId)}</p>
                                                         {currentStaff && (
                                                             <p className="mt-1 truncate text-[#0b1f4d]/70">{getDoctorName(appointment.doctorId)}</p>
@@ -1019,13 +1020,13 @@ export default function Dashboard() {
                                 <p className="text-sm text-gray-500">Recent patients with status and condition count</p>
                             </div>
                             {showUserDirectory && (
-                                <Link to="/patients" className="cursor-pointer rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]">
+                                <Link to="/patients" className={`cursor-pointer rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98]`}>
                                     View all
                                 </Link>
                             )}
                         </div>
                         <DataTable
-                            outerClassName="mx-5 mb-4 overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200"
+                            outerClassName="mx-5 mb-4 overflow-hidden rounded-2xl bg-white"
                             headerRowClassName="border-b border-gray-100 text-xs font-medium text-gray-500"
                             columns={
                                 <>
@@ -1072,7 +1073,7 @@ export default function Dashboard() {
                                     <tr
                                         key={patient.id}
                                         onClick={() => navigate(getPatientDetailUrl(patient))}
-                                        className="cursor-pointer transition hover:bg-gray-50 active:bg-gray-100"
+                                        className={`cursor-pointer transition ${THEME.HOVER_BACKGROUND} active:bg-gray-100`}
                                     >
                                         <td className="whitespace-nowrap px-5 py-4 text-gray-500">
                                             {index + 1}
@@ -1106,7 +1107,7 @@ export default function Dashboard() {
                     onClick={closeAppointmentModal}
                 >
                     <div
-                        className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl ring-1 ring-gray-200"
+                        className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="flex items-start justify-between gap-4">
@@ -1125,7 +1126,7 @@ export default function Dashboard() {
                         </div>
 
                         {selectedAppointment && isEditingExistingAppointment && (
-                            <div className="mt-4 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200">
+                            <div className="mt-4 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600">
                                 Current: {getPatientName(selectedAppointment.patientId)} with {getDoctorName(selectedAppointment.doctorId)}
                             </div>
                         )}
@@ -1171,7 +1172,7 @@ export default function Dashboard() {
                             <button
                                 type="button"
                                 onClick={closeAppointmentModal}
-                                className="cursor-pointer rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]"
+                                className={`cursor-pointer rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition ${THEME.HOVER_BACKGROUND} active:scale-[0.98]`}
                             >
                                 Cancel
                             </button>

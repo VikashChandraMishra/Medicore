@@ -1,59 +1,152 @@
-import { NavLink } from "react-router";
+import {
+    BarChart3,
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    LayoutDashboard,
+    LogOut,
+    ShieldCheck,
+    Stethoscope,
+    UserRound,
+    UsersRound,
+} from "lucide-react";
+import { NavLink, useNavigate } from "react-router";
 import { isAdminEmail } from "../data/users";
+import { THEME } from "../constants/theme";
 import useAuth from "../hooks/use-auth";
-import CloseButton from "./ui/CloseButton";
+import { authService } from "../services/auth-service";
+import { getInitialsFromName } from "../utils/initials";
+import { getDoctorByEmail, getStaffByEmail } from "../utils/patient-scope";
+import { notify } from "../utils/toast";
 
 type Props = {
     isOpen: boolean;
     onClose: () => void;
 };
 
+function getDisplayName(email?: string | null, displayName?: string | null) {
+    return displayName || email?.split("@")[0] || "User";
+}
+
 export default function Sidebar({ isOpen, onClose }: Props) {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const isAdmin = isAdminEmail(user?.email);
-    const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-        [
-            "cursor-pointer rounded-md px-3 py-2 font-medium transition-colors active:scale-[0.98]",
-            isActive
-                ? "bg-white text-gray-800 ring-1 ring-gray-200"
-                : "text-gray-500 hover:bg-white/70 hover:text-gray-800",
-        ].join(" ");
+    const doctor = getDoctorByEmail(user?.email);
+    const staff = getStaffByEmail(user?.email);
+    const RoleIcon = doctor ? Stethoscope : isAdmin ? ShieldCheck : UserRound;
+    const displayName = getDisplayName(user?.email, user?.displayName);
+    const initials = getInitialsFromName(displayName);
+    const roleLabel = isAdmin ? "Admin" : doctor ? "Doctor" : staff ? "Staff" : "Clinic user";
+    const navItems = [
+        { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { to: "/patients", label: "Patient Records", icon: UsersRound },
+        ...(isAdmin ? [{ to: "/analytics", label: "Reports & Analytics", icon: BarChart3 }] : []),
+    ];
+
+    const handleLogout = async () => {
+        try {
+            await authService.logout();
+            notify.success("Logged out");
+            navigate("/auth/login", { replace: true });
+        } catch (error) {
+            notify.error(authService.getAuthErrorMessage(error));
+        }
+    };
 
     return (
         <aside
-            className={`
-                relative z-50 h-full shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/95 backdrop-blur
-                transition-all duration-300 ease-in-out
-                ${isOpen ? "w-64 px-4 py-5" : "w-0 p-0 overflow-hidden"}
-            `}
+            className={`relative z-50 flex h-full shrink-0 flex-col ${THEME.SITE_BACKGROUND} transition-all duration-300 ease-in-out ${isOpen ? "w-72 px-4 py-5" : "w-20 px-3 py-5"}`}
         >
-            <div className="flex items-center justify-between mb-5">
-                <div>
-                    <h2 className="font-semibold whitespace-nowrap">Menu</h2>
-                    <p className="text-xs text-gray-500 whitespace-nowrap">
-                        Workspace
-                    </p>
+            <div className={`mb-6 flex items-center ${isOpen ? "justify-between" : "justify-center"}`}>
+                <div className={`flex min-w-0 items-center gap-3 ${isOpen ? "" : "justify-center"}`}>
+                    <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden">
+                        <img
+                            src="/logo.png"
+                            alt="Medicore"
+                            className="h-10 w-10 object-contain"
+                        />
+                    </div>
+                    {isOpen && (
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-gray-950">Medicore</p>
+                            <p className="truncate text-xs text-gray-500">Clinic workspace</p>
+                        </div>
+                    )}
                 </div>
-                <CloseButton
+                <button
+                    type="button"
                     onClick={onClose}
-                    label="Close sidebar"
-                    className="h-8 w-8 hover:bg-white hover:text-gray-800"
-                />
+                    className={`grid h-9 w-9 cursor-pointer place-items-center rounded-md bg-white text-gray-600 shadow-sm transition hover:text-[#0b1f4d] active:scale-[0.96] ${isOpen ? "" : "absolute -right-5 top-6"}`}
+                    aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+                    title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+                >
+                    {isOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </button>
             </div>
 
-            <nav className="flex flex-col gap-1 text-sm">
-                <NavLink to="/dashboard" className={navLinkClass}>
-                    Dashboard
-                </NavLink>
-                <NavLink to="/patients" className={navLinkClass}>
-                    Patients
-                </NavLink>
-                {isAdmin && (
-                    <NavLink to="/analytics" className={navLinkClass}>
-                        Analytics
-                    </NavLink>
-                )}
+            <nav className="flex flex-1 flex-col gap-1 text-sm">
+                {navItems.map((item) => {
+                    const Icon = item.icon;
+
+                    return (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            title={isOpen ? undefined : item.label}
+                            className={({ isActive }) =>
+                                [
+                                    "flex h-11 cursor-pointer items-center rounded-full font-medium transition active:scale-[0.98]",
+                                    isOpen ? "gap-3 px-3" : "justify-center px-0",
+                                    isActive
+                                        ? "bg-[#0b1f4d] text-white shadow-sm"
+                                        : "text-gray-700 hover:bg-white hover:text-[#0b1f4d]",
+                                ].join(" ")
+                            }
+                        >
+                            <Icon className="h-4 w-4 shrink-0" />
+                            {isOpen && <span className="truncate">{item.label}</span>}
+                        </NavLink>
+                    );
+                })}
             </nav>
+
+            <div className="border-t border-gray-200 pt-4">
+                <div className={`mb-3 rounded-xl bg-white shadow-sm ${isOpen ? "p-3" : "grid place-items-center p-2"}`}>
+                    <div className={`flex items-center ${isOpen ? "gap-3" : "justify-center"}`}>
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#0b1f4d] text-sm font-semibold text-white">
+                            {initials}
+                        </div>
+                        {isOpen && (
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-gray-950">{displayName}</p>
+                                <p className="truncate text-xs text-gray-500">{user?.email}</p>
+                                <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-400">
+                                    <RoleIcon className="h-3 w-3" />
+                                    {roleLabel}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={handleLogout}
+                    title={isOpen ? undefined : "Logout"}
+                    className={`flex h-10 w-full cursor-pointer items-center rounded-md text-sm font-medium text-gray-700 transition hover:bg-red-600 hover:text-white active:scale-[0.98] ${isOpen ? "gap-3 px-3" : "justify-center px-0"}`}
+                >
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    {isOpen && <span>Logout</span>}
+                </button>
+
+                {isOpen && (
+                    <p className="mt-4 flex items-center gap-2 px-3 text-xs text-gray-400">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        Appointment-ready workspace
+                    </p>
+                )}
+            </div>
         </aside>
     );
 }

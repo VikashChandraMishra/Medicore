@@ -16,7 +16,7 @@ export default function DataTable({
     footer,
     minWidthClassName = "min-w-160",
     maxHeightClassName = "max-h-126",
-    outerClassName = "overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200",
+    outerClassName = "overflow-hidden rounded-2xl bg-white",
     headerRowClassName = "border-y border-gray-100 text-xs font-medium text-gray-500",
 }: DataTableProps) {
     return (

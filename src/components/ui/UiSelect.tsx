@@ -59,7 +59,7 @@ export default function Select({
             {isOpen && (
                 <div
                     className={cn(
-                        "absolute right-0 z-30 mt-2 max-h-72 w-full min-w-44 overflow-auto rounded-xl border border-gray-200 bg-white p-1 text-sm",
+                        "absolute right-0 z-60 mt-2 max-h-72 w-full min-w-44 overflow-auto rounded-xl border border-gray-200 bg-white p-1 text-sm shadow-xl",
                         menuClassName,
                     )}
                 >

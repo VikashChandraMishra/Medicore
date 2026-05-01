@@ -1,8 +1,10 @@
 import {
     Activity,
     AlertTriangle,
+    CalendarCheck,
     CalendarClock,
     Clock3,
+    DollarSign,
     FileWarning,
     HeartPulse,
     Stethoscope,
@@ -43,6 +45,7 @@ import type { Patient } from "../types/patient";
 import { getMonthCalendarDays } from "../utils/calendar";
 import {
     formatDateTime,
+    getDateKey,
     formatLongDate,
     formatMonthYear,
     formatRelativeTime,
@@ -267,6 +270,11 @@ export default function Dashboard() {
     const visibleAppointments = currentDoctor
         ? appointments.filter((appointment) => appointment.doctorId === currentDoctor.id)
         : appointments;
+    const todayKey = getDateKey(new Date());
+    const upcomingAppointmentsCount = visibleAppointments.filter(
+        (appointment) => appointment.appointmentDate >= todayKey,
+    ).length;
+    const mockedRevenue = allVisits.length * 1250 + scopedPatients.length * 325;
     const selectedAppointment = selectedAppointmentDateKey
         ? appointments.find((appointment) => appointment.appointmentDate === selectedAppointmentDateKey)
         : undefined;
@@ -308,6 +316,16 @@ export default function Dashboard() {
                 label: "Total Patients",
                 value: scopedPatients.length,
                 icon: Users,
+            },
+            {
+                label: "Upcoming Appointments",
+                value: upcomingAppointmentsCount,
+                icon: CalendarCheck,
+            },
+            {
+                label: "Revenue",
+                value: `$${mockedRevenue.toLocaleString("en-US")}`,
+                icon: DollarSign,
             },
             {
                 label: "Active vs Inactive",

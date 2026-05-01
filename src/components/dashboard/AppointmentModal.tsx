@@ -47,7 +47,7 @@ export default function AppointmentModal({
             onClick={onClose}
         >
             <div
-                className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-4 shadow-2xl sm:p-5"
+                className="w-full max-w-lg rounded-xl bg-white p-4 shadow-2xl sm:p-5"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="flex items-start justify-between gap-4">

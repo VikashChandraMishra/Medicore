@@ -1,6 +1,6 @@
 import { Menu } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import { THEME } from "./constants/theme";
@@ -8,10 +8,11 @@ import useAuth from "./hooks/use-auth";
 
 export default function AppLayout() {
     const { user } = useAuth();
+    const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
         typeof window === "undefined" ? true : window.innerWidth >= 768,
     );
-    const shouldShowSidebar = Boolean(user);
+    const shouldShowSidebar = Boolean(user) && location.pathname !== "/";
 
     const toggleSidebar = () => {
         setIsSidebarOpen((prev) => !prev);

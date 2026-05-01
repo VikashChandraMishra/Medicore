@@ -9,8 +9,10 @@ import {
     Stethoscope,
     UserCheck,
     Users,
+    X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router";
 import {
     Area,
@@ -23,12 +25,18 @@ import {
 } from "recharts";
 import UserDirectory from "../components/dashboard/UserDirectory";
 import Badge, { type BadgeTone } from "../components/ui/Badge";
+import CloseButton from "../components/ui/CloseButton";
 import DataTable from "../components/ui/DataTable";
+import Select from "../components/ui/Select";
+import { db } from "../config/firebase-config";
+import { COLLECTIONS } from "../constants/collections";
 import { NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
 import { USER_STATUS } from "../constants/user";
 import { mockDoctors } from "../data/doctors";
+import { mockPatients } from "../data/patients";
 import { isAdminEmail } from "../data/users";
 import useAuth from "../hooks/use-auth";
+import type { Appointment } from "../types/appointment";
 import type { Note, Patient, Visit } from "../types/patient";
 import { getDoctorByEmail, getScopedPatientsForEmail, getStaffByEmail } from "../utils/patient-scope";
 import { notify } from "../utils/toast";
@@ -126,6 +134,14 @@ function formatMonthYear(date: Date) {
     }).format(date);
 }
 
+function formatLongDate(date: Date) {
+    return new Intl.DateTimeFormat("en", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    }).format(date);
+}
+
 function getMonthCalendarDays(date: Date) {
     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
     const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
@@ -153,6 +169,18 @@ function getMonthCalendarDays(date: Date) {
     });
 }
 
+function isAppointment(value: unknown): value is Appointment {
+    if (!value || typeof value !== "object") return false;
+
+    const appointment = value as Record<string, unknown>;
+
+    return (
+        typeof appointment.patientId === "string" &&
+        typeof appointment.doctorId === "string" &&
+        typeof appointment.appointmentDate === "string"
+    );
+}
+
 function formatRelativeTime(date: Date, now: Date) {
     const diff = Math.max(0, now.getTime() - date.getTime());
     const hours = Math.floor(diff / (60 * 60 * 1000));
@@ -177,6 +205,12 @@ function getPatientDetailUrl(patient: Patient) {
 
 function getDoctorName(doctorId: string) {
     return mockDoctors.find((doctor) => doctor.id === doctorId)?.displayName ?? "Unassigned";
+}
+
+function getPatientName(patientId: string) {
+    const patient = mockPatients.find((item) => item.id === patientId);
+
+    return patient ? getFullName(patient) : "Unknown patient";
 }
 
 function createTimelineItemFromVisit(patient: Patient, visit: Visit, index: number): TimelineItem {
@@ -281,6 +315,11 @@ export default function Dashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<DashboardTab>("alerts");
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [selectedAppointmentDateKey, setSelectedAppointmentDateKey] = useState<string | null>(null);
+    const [appointmentPatientId, setAppointmentPatientId] = useState("");
+    const [appointmentDoctorId, setAppointmentDoctorId] = useState("");
+    const notifiedAppointmentIdsRef = useRef<Set<string>>(new Set());
     const showUserDirectory = isAdminEmail(user?.email);
     const currentDoctor = getDoctorByEmail(user?.email);
     const currentStaff = getStaffByEmail(user?.email);
@@ -305,6 +344,83 @@ export default function Dashboard() {
             setActiveTab("visits");
         }
     }, [activeTab, currentDoctor, currentStaff, isStaffDashboard, showUserDirectory]);
+
+    useEffect(() => {
+        return onSnapshot(
+            collection(db, COLLECTIONS.APPOINTMENTS),
+            (snapshot) => {
+                const nextAppointments = snapshot.docs
+                    .map((appointmentDoc) => appointmentDoc.data())
+                    .filter(isAppointment)
+                    .sort((a, b) => a.appointmentDate.localeCompare(b.appointmentDate));
+
+                setAppointments(nextAppointments);
+            },
+            () => {
+                notify.error("Could not load appointments", {
+                    description: "Check the Firestore connection and permissions.",
+                });
+            },
+        );
+    }, []);
+
+    useEffect(() => {
+        if (!currentDoctor || !("Notification" in window) || Notification.permission !== "default") {
+            return;
+        }
+
+        Notification.requestPermission().catch(() => undefined);
+    }, [currentDoctor]);
+
+    useEffect(() => {
+        if (
+            !currentDoctor ||
+            !("Notification" in window) ||
+            !("serviceWorker" in navigator) ||
+            Notification.permission !== "granted"
+        ) {
+            return;
+        }
+
+        const doctorAppointments = appointments.filter(
+            (appointment) => appointment.doctorId === currentDoctor.id,
+        );
+        const pendingNotifications = doctorAppointments.filter(
+            (appointment) =>
+                !notifiedAppointmentIdsRef.current.has(
+                    `${appointment.doctorId}:${appointment.patientId}:${appointment.appointmentDate}`,
+                ),
+        );
+
+        if (pendingNotifications.length === 0) return;
+
+        const showAppointmentNotifications = async () => {
+            const registration = await navigator.serviceWorker.ready;
+
+            await Promise.all(
+                pendingNotifications.map((appointment) =>
+                    registration.showNotification("New appointment scheduled", {
+                        body: `${getPatientName(appointment.patientId)} on ${formatLongDate(new Date(`${appointment.appointmentDate}T00:00:00`))}`,
+                        icon: "/android-chrome-192x192.png",
+                        badge: "/favicon-32x32.png",
+                        tag: `medicore-appointment-${appointment.doctorId}-${appointment.patientId}-${appointment.appointmentDate}`,
+                        data: {
+                            url: "/dashboard",
+                            appointmentDate: appointment.appointmentDate,
+                        },
+                    }),
+                ),
+            );
+
+            pendingNotifications.forEach((appointment) => {
+                notifiedAppointmentIdsRef.current.add(
+                    `${appointment.doctorId}:${appointment.patientId}:${appointment.appointmentDate}`,
+                );
+            });
+        };
+
+        showAppointmentNotifications().catch(() => undefined);
+    }, [appointments, currentDoctor]);
 
     const activePatients = scopedPatients.filter(
         (patient) => patient.status === PATIENT_STATUS.ACTIVE,
@@ -341,6 +457,26 @@ export default function Dashboard() {
     const currentMonth = new Date();
     const calendarDays = getMonthCalendarDays(currentMonth);
     const dailyVisitTrend = getDailyVisitTrend(allVisits, operationalNow);
+    const visibleAppointments = currentDoctor
+        ? appointments.filter((appointment) => appointment.doctorId === currentDoctor.id)
+        : appointments;
+    const appointmentsByDate = new Map(
+        visibleAppointments.map((appointment) => [appointment.appointmentDate, appointment]),
+    );
+    const selectedAppointment = selectedAppointmentDateKey
+        ? appointments.find((appointment) => appointment.appointmentDate === selectedAppointmentDateKey)
+        : undefined;
+    const selectedAppointmentDate = selectedAppointmentDateKey
+        ? new Date(`${selectedAppointmentDateKey}T00:00:00`)
+        : null;
+    const patientOptions = scopedPatients.map((patient) => ({
+        label: getFullName(patient),
+        value: patient.id,
+    }));
+    const doctorOptions = mockDoctors.map((doctor) => ({
+        label: doctor.displayName,
+        value: doctor.id,
+    }));
     const visibleActiveTab =
         isStaffDashboard && activeTab !== "visits" && activeTab !== "appointments"
             ? "visits"
@@ -436,6 +572,70 @@ export default function Dashboard() {
         notify.success("Emergency alert simulated", {
             description: "The service worker displayed the notification.",
         });
+    };
+
+    const openAppointmentModal = (dateKey: string) => {
+        if (!currentStaff) return;
+
+        const appointment = appointments.find((item) => item.appointmentDate === dateKey);
+
+        setSelectedAppointmentDateKey(dateKey);
+        setAppointmentPatientId(appointment?.patientId ?? patientOptions[0]?.value ?? "");
+        setAppointmentDoctorId(appointment?.doctorId ?? doctorOptions[0]?.value ?? "");
+    };
+
+    const closeAppointmentModal = () => {
+        setSelectedAppointmentDateKey(null);
+        setAppointmentPatientId("");
+        setAppointmentDoctorId("");
+    };
+
+    const saveAppointment = async () => {
+        if (!selectedAppointmentDateKey) return;
+
+        const patient = scopedPatients.find((item) => item.id === appointmentPatientId);
+        const doctor = mockDoctors.find((item) => item.id === appointmentDoctorId);
+
+        if (!patient || !doctor) {
+            notify.error("Select a patient and doctor");
+            return;
+        }
+
+        const nextAppointment: Appointment = {
+            patientId: patient.id,
+            doctorId: doctor.id,
+            appointmentDate: selectedAppointmentDateKey,
+        };
+
+        try {
+            await setDoc(
+                doc(db, COLLECTIONS.APPOINTMENTS, selectedAppointmentDateKey),
+                nextAppointment,
+            );
+            notify.success("Appointment scheduled", {
+                description: `${getFullName(patient)} with ${doctor.displayName}`,
+            });
+            closeAppointmentModal();
+        } catch {
+            notify.error("Could not schedule appointment", {
+                description: "Check the Firestore connection and permissions.",
+            });
+        }
+    };
+
+    const removeAppointment = async (dateKey: string) => {
+        try {
+            await deleteDoc(doc(db, COLLECTIONS.APPOINTMENTS, dateKey));
+            notify.success("Appointment removed");
+
+            if (selectedAppointmentDateKey === dateKey) {
+                closeAppointmentModal();
+            }
+        } catch {
+            notify.error("Could not remove appointment", {
+                description: "Check the Firestore connection and permissions.",
+            });
+        }
     };
 
     return (
@@ -645,18 +845,46 @@ export default function Dashboard() {
                                     {calendarDays.map((day) => {
                                         const dayLabel = day.date.getDate();
                                         const dayKey = getDateKey(day.date);
+                                        const appointment = appointmentsByDate.get(dayKey);
+                                        const canSchedule = Boolean(currentStaff && day.isCurrentMonth);
 
                                         return (
                                             <div
                                                 key={dayKey}
-                                                className={`min-h-28 border-b border-r border-gray-200 p-2 last:border-r-0 sm:min-h-32 ${day.isPast
+                                                role={canSchedule ? "button" : undefined}
+                                                tabIndex={canSchedule ? 0 : undefined}
+                                                onClick={() => {
+                                                    if (canSchedule) {
+                                                        openAppointmentModal(dayKey);
+                                                    }
+                                                }}
+                                                onKeyDown={(event) => {
+                                                    if (!canSchedule || (event.key !== "Enter" && event.key !== " ")) return;
+                                                    event.preventDefault();
+                                                    openAppointmentModal(dayKey);
+                                                }}
+                                                className={`relative min-h-28 border-b border-r border-gray-200 p-2 last:border-r-0 sm:min-h-32 ${canSchedule ? "cursor-pointer transition hover:bg-gray-50" : ""} ${day.isPast
                                                     ? "bg-gray-100 text-gray-400"
                                                     : day.isCurrentMonth
                                                         ? "bg-white text-gray-800"
                                                         : "bg-gray-50 text-gray-300"
                                                     }`}
                                             >
-                                                <div className="flex justify-end">
+                                                {currentStaff && appointment && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            removeAppointment(dayKey);
+                                                        }}
+                                                        className="absolute right-2 top-2 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-white text-gray-500 shadow-sm ring-1 ring-gray-200 transition hover:bg-red-50 hover:text-red-600 active:scale-[0.95]"
+                                                        aria-label="Remove appointment"
+                                                        title="Remove appointment"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </button>
+                                                )}
+                                                <div className="flex justify-start">
                                                     <span
                                                         className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium ${day.isToday
                                                             ? "bg-[#0b1f4d] text-white"
@@ -666,6 +894,12 @@ export default function Dashboard() {
                                                         {dayLabel}
                                                     </span>
                                                 </div>
+                                                {appointment && (
+                                                    <div className="mt-3 rounded-md border border-[#0b1f4d]/10 bg-[#0b1f4d]/5 p-2 text-xs text-[#0b1f4d]">
+                                                        <p className="truncate font-semibold">{getPatientName(appointment.patientId)}</p>
+                                                        <p className="mt-1 truncate text-[#0b1f4d]/70">{getDoctorName(appointment.doctorId)}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -763,6 +997,93 @@ export default function Dashboard() {
 
                 {visibleActiveTab === "users" && showUserDirectory && <UserDirectory embedded />}
             </section>
+
+            {selectedAppointmentDateKey && currentStaff && selectedAppointmentDate && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/30 px-4"
+                    onClick={closeAppointmentModal}
+                >
+                    <div
+                        className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl ring-1 ring-gray-200"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-950">
+                                    Schedule Appointment
+                                </h2>
+                                <p className="text-sm text-gray-500">
+                                    {formatLongDate(selectedAppointmentDate)}
+                                </p>
+                            </div>
+                            <CloseButton
+                                onClick={closeAppointmentModal}
+                                label="Close appointment scheduler"
+                            />
+                        </div>
+
+                        {selectedAppointment && (
+                            <div className="mt-4 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200">
+                                Current: {getPatientName(selectedAppointment.patientId)} with {getDoctorName(selectedAppointment.doctorId)}
+                            </div>
+                        )}
+
+                        <div className="mt-5 space-y-4">
+                            <div>
+                                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                                    Patient
+                                </label>
+                                <Select
+                                    value={appointmentPatientId}
+                                    options={patientOptions}
+                                    onValueChange={setAppointmentPatientId}
+                                    ariaLabel="Select appointment patient"
+                                    menuClassName="left-0 right-auto"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                                    Doctor
+                                </label>
+                                <Select
+                                    value={appointmentDoctorId}
+                                    options={doctorOptions}
+                                    onValueChange={setAppointmentDoctorId}
+                                    ariaLabel="Select appointment doctor"
+                                    menuClassName="left-0 right-auto"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                            {selectedAppointment && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeAppointment(selectedAppointmentDateKey)}
+                                    className="cursor-pointer rounded-md border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 active:scale-[0.98]"
+                                >
+                                    Remove
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={closeAppointmentModal}
+                                className="cursor-pointer rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={saveAppointment}
+                                className="cursor-pointer rounded-md bg-[#0b1f4d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#102a63] active:scale-[0.98]"
+                            >
+                                Save Appointment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

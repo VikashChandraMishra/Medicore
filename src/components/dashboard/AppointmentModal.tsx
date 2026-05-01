@@ -1,9 +1,9 @@
-import type { SelectOption } from "../ui/Select";
+import type { SelectOption } from "../ui/UiSelect";
 import type { Appointment } from "../../types/appointment";
 import type { Patient } from "../../types/patient";
 import type { User } from "../../types/user";
 import CloseButton from "../ui/CloseButton";
-import Select from "../ui/Select";
+import Select from "../ui/UiSelect";
 import { formatLongDate } from "../../utils/date";
 import { getDoctorName, getPatientName } from "../../utils/people";
 import { THEME } from "../../constants/theme";

@@ -2,7 +2,7 @@ import { Loader2, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import AuthErrorModal from "../../components/auth/AuthErrorModal";
-import Input from "../../components/ui/Input";
+import Input from "../../components/ui/UiInput";
 import { THEME } from "../../constants/theme";
 import useAuth from "../../hooks/use-auth";
 import { authService, type AuthErrorDetails } from "../../services/auth-service";

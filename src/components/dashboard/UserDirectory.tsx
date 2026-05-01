@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { USER_ROLES, USER_STATUS, type UserRole, type UserStatus } from "../../constants/user";
 import { THEME } from "../../constants/theme";
+import { USER_ROLES, USER_STATUS, type UserRole, type UserStatus } from "../../constants/user";
 import useData from "../../hooks/use-data";
 import useSimulatedLoading from "../../hooks/use-simulated-loading";
 import type { User } from "../../types/user";
 import { getInitialsFromName } from "../../utils/initials";
 import Badge, { type BadgeTone } from "../ui/Badge";
 import DataTable from "../ui/DataTable";
-import Input from "../ui/Input";
-import Select from "../ui/Select";
+import Input from "../ui/UiInput";
+import Select from "../ui/UiSelect";
 
 type RoleFilter = UserRole | "all";
 type StatusFilter = UserStatus | "all";

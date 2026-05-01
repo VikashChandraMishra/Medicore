@@ -23,7 +23,7 @@ import {
     YAxis,
 } from "recharts";
 import Badge, { type BadgeTone } from "../components/ui/Badge";
-import Select from "../components/ui/Select";
+import Select from "../components/ui/UiSelect";
 import { GENDERS, NOTE_TYPES, PATIENT_STATUS, VISIT_TYPES } from "../constants/patient";
 import { THEME } from "../constants/theme";
 import useData from "../hooks/use-data";

@@ -4,8 +4,8 @@ import { PATIENT_STATUS } from "../../constants/patient";
 import { THEME } from "../../constants/theme";
 import type { Patient } from "../../types/patient";
 import { getStableRoomNumber, SORT_OPTIONS, type SortOption } from "../../utils/patient-records";
-import Input from "../ui/Input";
-import Select from "../ui/Select";
+import Input from "../ui/UiInput";
+import Select from "../ui/UiSelect";
 
 type PatientFiltersToolbarProps = {
     search: string;

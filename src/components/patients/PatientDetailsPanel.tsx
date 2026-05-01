@@ -33,7 +33,7 @@ export default function PatientDetailsPanel({
     return (
         <div
             ref={panelRef}
-            className={`fixed inset-y-0 right-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-4 shadow-2xl transition-all duration-300 ease-out sm:top-18.25 sm:bottom-0 sm:p-6 ${isOpen
+            className={`fixed inset-y-0 right-0 z-40 w-full max-w-xl overflow-y-auto bg-white p-4 shadow-2xl transition-all duration-300 ease-out sm:p-6 ${isOpen
                 ? "translate-x-0 opacity-100"
                 : "translate-x-full opacity-0"
                 }`}
